@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from app.exporters.template_codegen import _extract_state_rects, load_run_manifest
+from app.exporters.template_codegen import _extract_state_rects, _get_char_id, load_run_manifest
 
 
 def generate_custom_sandbox_html(
@@ -27,7 +27,7 @@ def generate_custom_sandbox_html(
     b64 = base64.b64encode(atlas_path.read_bytes()).decode("ascii") if atlas_path.exists() else ""
     img_src = f"data:image/png;base64,{b64}" if b64 else "sprite-sheet-alpha.png"
 
-    char_id = manifest.get("characterId") or manifest.get("character_id", "hero")
+    char_id = _get_char_id(manifest, "hero")
     rows_meta = manifest.get("animation", {}).get("rows", {})
     rects_map = _extract_state_rects(manifest)
 
@@ -35,7 +35,14 @@ def generate_custom_sandbox_html(
     for sname, rinfo in rows_meta.items():
         states_map[sname] = {"fps": float(rinfo.get("fps", 8)), "frames": rects_map.get(sname, [])}
 
-    safe_prompt_comment = custom_prompt.replace("*/", "").replace("<", "&lt;").replace(">", "&gt;")
+    safe_prompt_comment = (
+        custom_prompt.replace("*/", "")
+        .replace("--", "—")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("\r", " ")
+        .replace("\n", " ")
+    )
     pixel_js = "true" if pixel_art else "false"
 
     html_code = f"""<!DOCTYPE html>

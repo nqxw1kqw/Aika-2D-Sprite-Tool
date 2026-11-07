@@ -114,12 +114,12 @@ def write_dxlib_meta(project_id: str, run_id: str | None = None) -> Path:
     det_w = int(det.get("width", 0))
     det_h = int(det.get("height", 0))
     grid = det.get("grid") or {}
-    det_rows = int(grid.get("rows", 1))
-    det_cols = int(grid.get("cols", 1))
+    det_rows = int(det.get("estimated_rows") or grid.get("rows", 1))
+    det_cols = int(det.get("estimated_cols") or grid.get("cols", 1))
     det_alpha = 1 if det.get("has_transparent_bg") else 0
     det_chroma = str(det.get("recommended_chroma_key") or "#00FF00")
     det_err = str(det.get("error_code") or "NONE")
-    det_msg = str(det.get("message") or det.get("action_Required") or "Ready for pipeline").replace("\n", " ")
+    det_msg = str(det.get("message_vi") or det.get("message") or "Ready for pipeline").replace("\n", " ")
 
     manifest = load_run_manifest(rdir)
     analysis = analyze_run_directory(rdir)

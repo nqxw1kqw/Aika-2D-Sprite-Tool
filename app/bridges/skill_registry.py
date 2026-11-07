@@ -85,7 +85,10 @@ def read_skill_preview(skill_id: str, max_chars: int = 4000) -> dict[str, Any]:
     for s in list_installed_skills(featured_only=False):
         if s["id"] == skill_id:
             p = Path(s["skill_md_path"])
-            text = p.read_text(encoding="utf-8", errors="replace")
+            try:
+                text = p.read_text(encoding="utf-8", errors="replace")
+            except OSError as exc:
+                return {"ok": False, "error": f"Cannot read SKILL.md for '{skill_id}': {exc}"}
             return {
                 "ok": True,
                 "skill": s,

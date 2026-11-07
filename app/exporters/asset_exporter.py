@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-import glob
+import shutil
+import subprocess
 from pathlib import Path
 from typing import Any
 
 from PIL import Image, ImageDraw
 
 from app.config import SPRITE_GEN_PYTHON, SPRITE_GEN_ROOT
+from app.core.frame_analyzer import list_frame_files
 
 
 def generate_forward_loop_gifs(
@@ -28,11 +30,17 @@ def generate_forward_loop_gifs(
         state_dir = candidates[0]
         state = state_dir.name
 
-    png_files = sorted(state_dir.glob("frame-*.png"), key=lambda p: int(p.stem.split("-")[1]))
+    png_files = list_frame_files(state_dir)
     if not png_files:
         return {"ok": False, "error": f"No frames in {state_dir}"}
 
-    src_frames = [Image.open(p).convert("RGBA") for p in png_files]
+    src_frames: list[Image.Image] = []
+    for p in png_files:
+        try:
+            with Image.open(p) as im:
+                src_frames.append(im.convert("RGBA"))
+        except (OSError, ValueError, Image.DecompressionBombError) as exc:
+            return {"ok": False, "error": f"Corrupt frame '{p.name}': {exc}"}
     fw, fh = src_frames[0].size
 
     out_previews = rdir / "previews"
@@ -44,8 +52,12 @@ def generate_forward_loop_gifs(
     ground_y = fh - 8
 
     stage_frames: list[Image.Image] = []
+    trans_frames: list[Image.Image] = []
     trans_dir = rdir / "_forward_temp"
     trans_dir.mkdir(parents=True, exist_ok=True)
+    # Clear frames from a previous (possibly longer) run so they don't leak into the new GIF.
+    for stale in trans_dir.glob("frame-*.png"):
+        stale.unlink(missing_ok=True)
 
     for step in range(total_steps):
         f_im = src_frames[step % len(src_frames)]
@@ -76,6 +88,7 @@ def generate_forward_loop_gifs(
         trans = Image.new("RGBA", (canvas_w, canvas_h), (0, 0, 0, 0))
         trans.paste(f_im, (x_pos, 12), f_im)
         trans.save(trans_dir / f"frame-{step:02d}.png")
+        trans_frames.append(trans)
 
     stage_gif_path = out_previews / f"{state}_forward_stage.gif"
     stage_frames[0].save(
@@ -88,27 +101,40 @@ def generate_forward_loop_gifs(
 
     trans_gif_path = out_previews / f"{state}_forward_transparent.gif"
     compose_gif_script = SPRITE_GEN_ROOT / "scripts" / "compose_sprite_gif.py"
-    trans_pngs = sorted(glob.glob(str(trans_dir / "frame-*.png")))
-    import subprocess
+    trans_pngs = [str(p) for p in list_frame_files(trans_dir)]  # numeric order, even past frame-99
+    transparent_ok = False
+    try:
+        proc = subprocess.run(
+            [str(SPRITE_GEN_PYTHON), str(compose_gif_script), *trans_pngs, "--output", str(trans_gif_path), "--delay-ticks", "9"],
+            capture_output=True,
+            timeout=60,
+        )
+        transparent_ok = proc.returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        transparent_ok = False
 
-    subprocess.run(
-        [str(SPRITE_GEN_PYTHON), str(compose_gif_script), *trans_pngs, "--output", str(trans_gif_path), "--delay-ticks", "9"],
-        capture_output=True,
-        timeout=60,
-    )
+    if not transparent_ok and trans_frames:
+        trans_frames[0].save(
+            trans_gif_path,
+            save_all=True,
+            append_images=trans_frames[1:],
+            duration=90,
+            loop=0,
+            disposal=2,
+        )
+        transparent_ok = trans_gif_path.exists()
 
     return {
         "ok": True,
         "state": state,
         "stage_gif": str(stage_gif_path),
         "transparent_gif": str(trans_gif_path),
+        "transparent_gif_ok": transparent_ok,
     }
 
 
 def export_assets_bundle(run_dir: str | Path, out_dir: str | Path) -> dict[str, Any]:
     """Export PNG sprite sheet, manifest.json, individual frames, and forward-loop GIFs into out_dir."""
-    import shutil
-
     rdir = Path(run_dir)
     dest = Path(out_dir)
     dest.mkdir(parents=True, exist_ok=True)

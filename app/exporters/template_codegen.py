@@ -12,38 +12,87 @@ from __future__ import annotations
 
 import base64
 import json
+import re
 from pathlib import Path
 from typing import Any
 
 
+def _validate_manifest_structure(data: dict[str, Any], rdir: Path) -> None:
+    """Validate required animation/cell/frame_layout fields in manifest.json."""
+    cell = data.get("cell")
+    if cell is not None:
+        if not isinstance(cell, dict):
+            raise ValueError(f"manifest.json 'cell' in {rdir} must be an object")
+        cw = int(cell.get("width", 256))
+        ch = int(cell.get("height", 256))
+        if cw < 1 or ch < 1:
+            raise ValueError(f"manifest.json 'cell' dimensions in {rdir} must be >= 1")
+
+    anim = data.get("animation")
+    if not isinstance(anim, dict):
+        raise ValueError(f"manifest.json in {rdir} is missing an 'animation' object")
+    rows = anim.get("rows")
+    if not isinstance(rows, dict) or not rows:
+        raise ValueError(f"manifest.json in {rdir} must contain a non-empty 'animation.rows' object")
+    for sname, rinfo in rows.items():
+        if not sname or not isinstance(rinfo, dict):
+            raise ValueError(f"manifest.json 'animation.rows.{sname}' in {rdir} must be an object")
+        fps = float(rinfo.get("fps", 8))
+        frames = int(rinfo.get("frames", 4))
+        if fps <= 0 or frames < 1:
+            raise ValueError(f"manifest.json state '{sname}' in {rdir} must have fps > 0 and frames >= 1")
+
+    fl = data.get("frame_layout")
+    if fl is not None:
+        if not isinstance(fl, dict):
+            raise ValueError(f"manifest.json 'frame_layout' in {rdir} must be an object")
+        if fl.get("rows") is not None and not isinstance(fl.get("rows"), dict):
+            raise ValueError(f"manifest.json 'frame_layout.rows' in {rdir} must be an object")
+        if fl.get("frames") is not None and not isinstance(fl.get("frames"), list):
+            raise ValueError(f"manifest.json 'frame_layout.frames' in {rdir} must be a list")
+
+
 def load_run_manifest(run_dir: str | Path) -> dict[str, Any]:
-    """Read manifest.json from a sprite-gen run directory."""
+    """Read and validate manifest.json from a sprite-gen run directory."""
     rdir = Path(run_dir)
     mpath = rdir / "manifest.json"
     if not mpath.exists():
         raise FileNotFoundError(f"manifest.json not found in {rdir}")
-    return json.loads(mpath.read_text(encoding="utf-8"))
+    data = json.loads(mpath.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"manifest.json in {rdir} must contain a JSON object, got {type(data).__name__}")
+    _validate_manifest_structure(data, rdir)
+    return data
 
 
 def _get_char_id(manifest: dict[str, Any], default: str = "sprite_actor") -> str:
+    raw: str | None = None
     for key in ("characterId", "character_id"):
         if key in manifest and manifest[key]:
-            return str(manifest[key])
-    char_obj = manifest.get("character")
-    if isinstance(char_obj, dict) and "id" in char_obj:
-        return str(char_obj["id"])
-    return default
+            raw = str(manifest[key])
+            break
+    if raw is None:
+        char_obj = manifest.get("character")
+        if isinstance(char_obj, dict) and char_obj.get("id"):
+            raw = str(char_obj["id"])
+    if not raw:
+        return default
+    cleaned = re.sub(r"[^A-Za-z0-9_-]+", "_", raw).strip("_")
+    return cleaned or default
 
 
 def _extract_state_rects(manifest: dict[str, Any]) -> dict[str, list[dict[str, int]]]:
-    cell = manifest.get("cell", {"width": 256, "height": 256})
+    cell = manifest.get("cell") or {"width": 256, "height": 256}
     cw, ch = int(cell.get("width", 256)), int(cell.get("height", 256))
     rows_meta = manifest.get("animation", {}).get("rows", {})
-    layout_rows = manifest.get("frame_layout", {}).get("rows", {})
-    layout_frames = manifest.get("frame_layout", {}).get("frames", [])
+    frame_layout = manifest.get("frame_layout") or {}
+    layout_rows = frame_layout.get("rows") or {}
+    layout_frames = frame_layout.get("frames") or []
 
     out: dict[str, list[dict[str, int]]] = {st: [] for st in rows_meta}
     for st, rlist in layout_rows.items():
+        if not isinstance(rlist, list):
+            raise ValueError(f"frame_layout.rows.{st} must be a list")
         out[st] = [
             {
                 "x": int(rf.get("x", 0)),
@@ -54,6 +103,8 @@ def _extract_state_rects(manifest: dict[str, Any]) -> dict[str, list[dict[str, i
             for rf in rlist
         ]
     for lf in layout_frames:
+        if not isinstance(lf, dict):
+            raise ValueError("frame_layout.frames entries must be objects")
         st = str(lf.get("state", "idle"))
         out.setdefault(st, []).append(
             {
@@ -63,6 +114,15 @@ def _extract_state_rects(manifest: dict[str, Any]) -> dict[str, list[dict[str, i
                 "h": int(lf.get("h", lf.get("height", ch))),
             }
         )
+    # Synthesize grid coordinates if frame_layout was omitted for any declared animation row
+    for row_idx, (st, rinfo) in enumerate(rows_meta.items()):
+        if not out.get(st):
+            r_idx = int(rinfo.get("row", row_idx))
+            fcount = int(rinfo.get("frames", 4))
+            out[st] = [
+                {"x": i * cw, "y": r_idx * ch, "w": cw, "h": ch}
+                for i in range(fcount)
+            ]
     return out
 
 
@@ -83,7 +143,7 @@ def generate_html5_canvas_code(
         img_src = "sprite-sheet-alpha.png"
 
     char_id = _get_char_id(manifest, "sprite_actor")
-    cell = manifest.get("cell", {"width": 256, "height": 256})
+    cell = manifest.get("cell") or {"width": 256, "height": 256}
     cell_w = int(cell.get("width", 256))
     cell_h = int(cell.get("height", 256))
     rows_meta = manifest.get("animation", {}).get("rows", {})
@@ -255,7 +315,7 @@ def generate_phaser3_code(run_dir: str | Path) -> str:
     """Generate Phaser 3 Scene code consuming sprite-sheet-alpha.png and manifest.json."""
     manifest = load_run_manifest(run_dir)
     char_id = _get_char_id(manifest, "hero")
-    cell = manifest.get("cell", {"width": 256, "height": 256})
+    cell = manifest.get("cell") or {"width": 256, "height": 256}
     cw, ch = int(cell.get("width", 256)), int(cell.get("height", 256))
     rows_meta = manifest.get("animation", {}).get("rows", {})
     max_cols = max((int(r.get("frames", 1)) for r in rows_meta.values()), default=1)
@@ -387,7 +447,7 @@ def generate_unity_csharp_code(run_dir: str | Path) -> str:
     """Generate Unity C# MonoBehaviour script for animating the sprite sheet."""
     manifest = load_run_manifest(run_dir)
     char_id = _get_char_id(manifest, "Hero")
-    cell = manifest.get("cell", {"width": 256, "height": 256})
+    cell = manifest.get("cell") or {"width": 256, "height": 256}
     cw, ch = int(cell.get("width", 256)), int(cell.get("height", 256))
     rows_meta = manifest.get("animation", {}).get("rows", {})
 
@@ -598,27 +658,56 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {{
 """
 
 
+_ENGINE_TARGETS: dict[str, tuple[str, str]] = {
+    "dxlib": ("dxlib_sprite_runner.cpp", "cpp"),
+    "html5": ("sprite_autorun_player.html", "html"),
+    "phaser3": ("SpritePreviewScene.js", "javascript"),
+    "godot4": ("CharacterAutoRunner.gd", "gdscript"),
+    "unity": ("SpriteAutoRunner.cs", "csharp"),
+}
+
+SUPPORTED_ENGINES: tuple[str, ...] = tuple(_ENGINE_TARGETS)
+
+
 def export_code_by_engine(
     run_dir: str | Path,
     engine: str = "html5",
     embed_base64: bool = True,
     pixel_art: bool = False,
 ) -> dict[str, Any]:
-    """Generate code for the requested engine and return filename + source code."""
+    """Generate code for the requested engine and return filename + source code.
+
+    Never raises for bad input: returns `{"ok": False, "error_code": ..., "error": ...}` with
+    `UNSUPPORTED_ENGINE`, `MANIFEST_NOT_FOUND` or `MANIFEST_INVALID`.
+    """
     eng = engine.lower().strip()
-    if eng == "dxlib":
-        code = generate_dxlib_cpp_code(run_dir)
-        return {"ok": True, "engine": "dxlib", "filename": "dxlib_sprite_runner.cpp", "language": "cpp", "code": code}
-    if eng == "html5":
-        code = generate_html5_canvas_code(run_dir, embed_base64=embed_base64, default_pixel_art=pixel_art)
-        return {"ok": True, "engine": "html5", "filename": "sprite_autorun_player.html", "language": "html", "code": code}
-    if eng == "phaser3":
-        code = generate_phaser3_code(run_dir)
-        return {"ok": True, "engine": "phaser3", "filename": "SpritePreviewScene.js", "language": "javascript", "code": code}
-    if eng == "godot4":
-        code = generate_godot4_code(run_dir)
-        return {"ok": True, "engine": "godot4", "filename": "CharacterAutoRunner.gd", "language": "gdscript", "code": code}
-    if eng == "unity":
-        code = generate_unity_csharp_code(run_dir)
-        return {"ok": True, "engine": "unity", "filename": "SpriteAutoRunner.cs", "language": "csharp", "code": code}
-    return {"ok": False, "error": f"Unsupported engine: {engine}"}
+    if eng not in _ENGINE_TARGETS:
+        return {
+            "ok": False,
+            "error_code": "UNSUPPORTED_ENGINE",
+            "error": f"Unsupported engine: {engine}. Supported: {', '.join(SUPPORTED_ENGINES)}",
+        }
+
+    try:
+        if eng == "dxlib":
+            code = generate_dxlib_cpp_code(run_dir)
+        elif eng == "html5":
+            code = generate_html5_canvas_code(run_dir, embed_base64=embed_base64, default_pixel_art=pixel_art)
+        elif eng == "phaser3":
+            code = generate_phaser3_code(run_dir)
+        elif eng == "godot4":
+            code = generate_godot4_code(run_dir)
+        else:
+            code = generate_unity_csharp_code(run_dir)
+    except FileNotFoundError as exc:
+        return {"ok": False, "error_code": "MANIFEST_NOT_FOUND", "error": str(exc)}
+    except (ValueError, TypeError, AttributeError, KeyError) as exc:
+        # json.JSONDecodeError is a ValueError; the others come from unexpected manifest shapes.
+        return {
+            "ok": False,
+            "error_code": "MANIFEST_INVALID",
+            "error": f"manifest.json is malformed ({type(exc).__name__}: {exc})",
+        }
+
+    filename, language = _ENGINE_TARGETS[eng]
+    return {"ok": True, "engine": eng, "filename": filename, "language": language, "code": code}

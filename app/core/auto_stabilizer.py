@@ -7,13 +7,46 @@ through `sprite-gen compose-atlas` and `sprite-gen compose-gif`.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
 
-from sprite_gen.curate import curation as sg_curation
+try:
+    from sprite_gen.curate import curation as sg_curation
+except ImportError:  # sprite-gen is an external, read-only skill install (see ARCHITECTURE.md)
+    sg_curation = None
 
-from app.core.frame_analyzer import analyze_state_frames
+from app.core.frame_analyzer import analyze_state_frames, list_frame_files
+
+
+def _compute_state_revision(rdir: Path, state_name: str) -> str:
+    """Return sprite-gen's state revision when available, or a deterministic SHA-256 fallback."""
+    if sg_curation is not None:
+        return sg_curation.state_revision(rdir, state_name)
+    h = hashlib.sha256()
+    sdir = rdir / "frames" / state_name
+    for fp in list_frame_files(sdir):
+        h.update(fp.name.encode("utf-8"))
+        h.update(b"\x00")
+        h.update(fp.read_bytes())
+    return f"sha256:{h.hexdigest()[:16]}"
+
+
+def _compute_run_revision(rdir: Path) -> str:
+    """Return sprite-gen's run revision when available, or a deterministic SHA-256 fallback."""
+    if sg_curation is not None:
+        return sg_curation.run_revision(rdir)
+    h = hashlib.sha256()
+    frames_root = rdir / "frames"
+    if frames_root.is_dir():
+        for d in sorted(frames_root.iterdir()):
+            if d.is_dir() and not d.name.startswith("_"):
+                h.update(d.name.encode("utf-8"))
+                h.update(b":")
+                h.update(_compute_state_revision(rdir, d.name).encode("utf-8"))
+                h.update(b"\n")
+    return f"sha256:{h.hexdigest()[:16]}"
 
 
 def apply_auto_stabilize(
@@ -36,8 +69,10 @@ def apply_auto_stabilize(
             existing_states = json.loads(curation_path.read_text(encoding="utf-8")).get("states", {})
         except Exception:
             existing_states = {}
+        if not isinstance(existing_states, dict):
+            existing_states = {}
 
-    run_rev = sg_curation.run_revision(rdir)
+    run_rev = _compute_run_revision(rdir)
     new_states: dict[str, Any] = {}
     applied_changes: dict[str, Any] = {}
 
@@ -45,10 +80,12 @@ def apply_auto_stabilize(
         if not sdir.is_dir() or sdir.name.startswith("_"):
             continue
         sname = sdir.name
-        state_rev = sg_curation.state_revision(rdir, sname)
+        state_rev = _compute_state_revision(rdir, sname)
 
         # Analyze raw un-transformed frames first
         raw_analysis = analyze_state_frames(sdir, state_name=sname)
+        if not raw_analysis.get("ok"):
+            continue
         frames_info = raw_analysis.get("frames", [])
         is_loco = bool(raw_analysis.get("is_locomotion", False))
 
@@ -89,7 +126,7 @@ def apply_auto_stabilize(
                 "depth": 0.02,
                 "depth_x": 0.03,
             }
-        elif "breathe" in existing_states.get(sname, {}):
+        elif isinstance(existing_states.get(sname), dict) and "breathe" in existing_states[sname]:
             state_entry["breathe"] = existing_states[sname]["breathe"]
 
         if custom_state_overrides and sname in custom_state_overrides:
@@ -130,10 +167,10 @@ def apply_manual_frame_edit(
     """Adjust a single frame's dx, dy or selected state in curation.json."""
     rdir = Path(run_dir)
     sdir = rdir / "frames" / state_name
-    if not sdir.exists():
+    if not sdir.is_dir() or state_name.startswith("_"):
         return {"ok": False, "error": f"State '{state_name}' not found"}
 
-    all_pngs = sorted(sdir.glob("frame-*.png"), key=lambda p: int(p.stem.split("-")[1]))
+    all_pngs = list_frame_files(sdir)
     total_frames = len(all_pngs)
     if not (0 <= frame_index < total_frames):
         return {"ok": False, "error": f"Invalid frame index {frame_index}"}
@@ -145,25 +182,36 @@ def apply_manual_frame_edit(
             cdata = json.loads(curation_path.read_text(encoding="utf-8"))
         except Exception:
             cdata = {}
+        if not isinstance(cdata, dict):
+            cdata = {}
 
-    run_rev = sg_curation.run_revision(rdir)
+    run_rev = _compute_run_revision(rdir)
     states_map: dict[str, Any] = cdata.get("states", {})
+    if not isinstance(states_map, dict):
+        states_map = {}
 
     # Ensure every state in frames/ has a valid revision entry
     frames_root = rdir / "frames"
     for d in sorted(frames_root.iterdir()):
         if d.is_dir() and not d.name.startswith("_"):
             sn = d.name
-            srev = sg_curation.state_revision(rdir, sn)
-            if sn not in states_map:
-                cnt = len(list(d.glob("frame-*.png")))
+            srev = _compute_state_revision(rdir, sn)
+            if not isinstance(states_map.get(sn), dict):
+                cnt = len(list_frame_files(d))
                 states_map[sn] = {"revision": srev, "selected": list(range(cnt))}
             else:
                 states_map[sn]["revision"] = srev
 
     st_entry = states_map[state_name]
-    selected: list[int] = list(st_entry.get("selected", list(range(total_frames))))
-    transforms: dict[str, dict[str, Any]] = dict(st_entry.get("transforms", {}))
+    raw_selected = st_entry.get("selected", list(range(total_frames)))
+    if isinstance(raw_selected, list) and all(isinstance(i, int) and not isinstance(i, bool) for i in raw_selected):
+        selected: list[int] = sorted({i for i in raw_selected if 0 <= i < total_frames})
+        if not selected:
+            selected = list(range(total_frames))
+    else:
+        selected = list(range(total_frames))
+    raw_transforms = st_entry.get("transforms", {})
+    transforms: dict[str, dict[str, Any]] = dict(raw_transforms) if isinstance(raw_transforms, dict) else {}
 
     if toggle_selected:
         if frame_index in selected:
@@ -175,9 +223,18 @@ def apply_manual_frame_edit(
         st_entry["selected"] = selected
 
     if delta_dx != 0 or delta_dy != 0:
-        cur_tr = dict(transforms.get(str(frame_index), {"dx": 0, "dy": 0}))
-        cur_tr["dx"] = int(cur_tr.get("dx", 0)) + delta_dx
-        cur_tr["dy"] = int(cur_tr.get("dy", 0)) + delta_dy
+        prev_tr = transforms.get(str(frame_index))
+        cur_tr = dict(prev_tr) if isinstance(prev_tr, dict) else {"dx": 0, "dy": 0}
+        try:
+            base_dx = int(round(float(cur_tr.get("dx", 0))))
+        except (TypeError, ValueError, OverflowError):
+            base_dx = 0
+        try:
+            base_dy = int(round(float(cur_tr.get("dy", 0))))
+        except (TypeError, ValueError, OverflowError):
+            base_dy = 0
+        cur_tr["dx"] = base_dx + delta_dx
+        cur_tr["dy"] = base_dy + delta_dy
         if cur_tr["dx"] == 0 and cur_tr["dy"] == 0:
             transforms.pop(str(frame_index), None)
         else:
