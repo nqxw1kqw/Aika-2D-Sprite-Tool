@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "kind": "sprite-gen-request",
+  "engine": "component-row",
+  "character": {
+    "id": "slice_input_sheet",
+    "description": "unpacked from atlas (auto-detect)"
+  },
+  "cell": {
+    "shape": "rect",
+    "width": 110,
+    "height": 160,
+    "size": 110,
+    "safe_margin": 0
+  },
+  "chroma_key": {
+    "name": "magenta",
+    "hex": "#FF00FF",
+    "rgb": [
+      255,
+      0,
+      255
+    ]
+  },
+  "states": {
+    "idle": {
+      "frames": 6,
+      "fps": 6,
+      "loop": true,
+      "action": ""
+    },
+    "walk": {
+      "frames": 8,
+      "fps": 6,
+      "loop": true,
+      "action": ""
+    }
+  }
+}

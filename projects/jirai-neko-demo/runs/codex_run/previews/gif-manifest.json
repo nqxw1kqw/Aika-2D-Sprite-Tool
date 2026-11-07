@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "kind": "sprite-gen-gif-run",
+  "run_dir": "C:\\Users\\nqxw1\\.gemini\\antigravity\\scratch\\jirai-sprite-demo\\codex_run",
+  "exports": [
+    {
+      "state": "idle",
+      "output": "C:\\Users\\nqxw1\\.gemini\\antigravity\\scratch\\jirai-sprite-demo\\codex_run\\previews\\idle.gif",
+      "frames": 4,
+      "fps": 5.0,
+      "loop": true,
+      "gif_report": {
+        "path": "C:\\Users\\nqxw1\\.gemini\\antigravity\\scratch\\jirai-sprite-demo\\codex_run\\previews\\idle.gif",
+        "frames": 4,
+        "delay_ticks": [
+          20,
+          20,
+          20,
+          20
+        ],
+        "loop": 0,
+        "transparent": true,
+        "disposal": [
+          2,
+          2,
+          2,
+          2
+        ]
+      }
+    },
+    {
+      "state": "walk",
+      "output": "C:\\Users\\nqxw1\\.gemini\\antigravity\\scratch\\jirai-sprite-demo\\codex_run\\previews\\walk.gif",
+      "frames": 6,
+      "fps": 8.0,
+      "loop": true,
+      "gif_report": {
+        "path": "C:\\Users\\nqxw1\\.gemini\\antigravity\\scratch\\jirai-sprite-demo\\codex_run\\previews\\walk.gif",
+        "frames": 6,
+        "delay_ticks": [
+          12,
+          12,
+          12,
+          12,
+          12,
+          12
+        ],
+        "loop": 0,
+        "transparent": true,
+        "disposal": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "id": "jirai-neko-demo",
+  "name": "Jirai-kei Neko Chibi (Demo)",
+  "created_at": "2026-11-06T17:00:00+09:00",
+  "active_input": "input_sheet.png",
+  "active_run": "codex_run",
+  "default_skill": "sprite-gen",
+  "prompt": "2D chibi side-view anime game sprite of a Jirai-kei x Ryousangata x Cat-motif girl (黒×ピンクの地雷系美少女, 157cm petite chibi proportions) facing right: black hair with pink gradient tips in long wavy twintails, straight bangs, large pastel pink ribbon and white cat-shaped hairclip, pink-purple eyes with heart highlights, black oversized hoodie with pink criss-cross ribbon lacing on sleeves, black-and-pink plaid pleated mini skirt, black lace knee-high socks, and black platform boots"
+}

@@ -1,0 +1,41 @@
+{
+  "kind": "sprite-gen-gen-set-report",
+  "run_dir": "C:\\Users\\nqxw1\\.gemini\\antigravity\\scratch\\jirai-sprite-demo\\codex_run",
+  "states": [
+    "idle",
+    "walk"
+  ],
+  "ok": 2,
+  "failed": [],
+  "not_started": [],
+  "items": [
+    {
+      "state": "idle",
+      "out": "C:\\Users\\nqxw1\\.gemini\\antigravity\\scratch\\jirai-sprite-demo\\codex_run\\raw\\idle.png",
+      "report": "C:\\Users\\nqxw1\\.gemini\\antigravity\\scratch\\jirai-sprite-demo\\codex_run\\reports\\gen-set\\idle.json",
+      "refs": [
+        "C:\\Users\\nqxw1\\.gemini\\antigravity\\scratch\\jirai-sprite-demo\\codex_run\\base-source.png",
+        "C:\\Users\\nqxw1\\.gemini\\antigravity\\scratch\\jirai-sprite-demo\\codex_run\\references\\layout-guides\\idle.png"
+      ],
+      "provider": "codex",
+      "provider_resolved_from": "explicit",
+      "auth_source": "codex-login",
+      "elapsed_seconds": 37.4,
+      "ok": true
+    },
+    {
+      "state": "walk",
+      "out": "C:\\Users\\nqxw1\\.gemini\\antigravity\\scratch\\jirai-sprite-demo\\codex_run\\raw\\walk.png",
+      "report": "C:\\Users\\nqxw1\\.gemini\\antigravity\\scratch\\jirai-sprite-demo\\codex_run\\reports\\gen-set\\walk.json",
+      "refs": [
+        "C:\\Users\\nqxw1\\.gemini\\antigravity\\scratch\\jirai-sprite-demo\\codex_run\\base-source.png",
+        "C:\\Users\\nqxw1\\.gemini\\antigravity\\scratch\\jirai-sprite-demo\\codex_run\\references\\layout-guides\\walk.png"
+      ],
+      "provider": "codex",
+      "provider_resolved_from": "explicit",
+      "auth_source": "codex-login",
+      "elapsed_seconds": 37.4,
+      "ok": true
+    }
+  ]
+}

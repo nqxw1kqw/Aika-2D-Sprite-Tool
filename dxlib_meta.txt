@@ -1,0 +1,18 @@
+PROJECT jirai-neko-demo codex_run codex_run,slice_input_sheet,unpacked_run
+INPUTS input_sheet.png base_chibi.png,character_ref.jpg,input_sheet.png
+INPUT_PATH C:\Katsuragi_Shin\Aika 2D Sprite Tool\projects\jirai-neko-demo\inputs\input_sheet.png
+DETECT 1 sprite_sheet 1024 341 1 1 1 #00FF00 NONE
+DETECT_MSG Ready for pipeline
+ATLAS C:\Katsuragi_Shin\Aika 2D Sprite Tool\projects\jirai-neko-demo\runs\codex_run\sprite-sheet-alpha.png
+STATE idle 5.00 1 NORMAL 0 0 0 138 205
+FRAME idle 0 0 0 256 256 1 0 0 189.00 0.00 0.00 6.72 OK NORMAL
+FRAME idle 1 256 0 256 256 1 0 0 188.00 -1.00 0.72 3.29 OK NORMAL
+FRAME idle 2 512 0 256 256 1 0 0 188.00 -1.00 0.72 9.54 OK NORMAL
+FRAME idle 3 768 0 256 256 1 0 0 188.00 -1.00 0.72 3.98 OK NORMAL
+STATE walk 8.00 1 NORMAL 0 0 0 133 203
+FRAME walk 0 0 256 256 256 1 0 0 186.00 0.00 0.00 23.65 OK NORMAL
+FRAME walk 1 256 256 256 256 1 0 0 185.00 -1.00 0.75 25.84 OK NORMAL
+FRAME walk 2 512 256 256 256 1 0 0 186.00 0.00 0.00 26.96 OK NORMAL
+FRAME walk 3 768 256 256 256 1 0 0 186.00 0.00 0.00 29.59 OK NORMAL
+FRAME walk 4 1024 256 256 256 1 0 0 185.00 -1.00 0.75 12.59 OK NORMAL
+FRAME walk 5 1280 256 256 256 1 0 0 187.00 1.00 0.75 13.81 OK NORMAL

@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "kind": "sprite-gen-gif-run",
+  "run_dir": "C:\\Users\\nqxw1\\.gemini\\antigravity\\scratch\\jirai-sprite-demo\\run",
+  "exports": [
+    {
+      "state": "idle",
+      "output": "C:\\Users\\nqxw1\\.gemini\\antigravity\\scratch\\jirai-sprite-demo\\run\\previews_curated\\idle.gif",
+      "frames": 6,
+      "fps": 6.0,
+      "loop": true,
+      "gif_report": {
+        "path": "C:\\Users\\nqxw1\\.gemini\\antigravity\\scratch\\jirai-sprite-demo\\run\\previews_curated\\idle.gif",
+        "frames": 6,
+        "delay_ticks": [
+          16,
+          16,
+          16,
+          16,
+          16,
+          16
+        ],
+        "loop": 0,
+        "transparent": true,
+        "disposal": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ]
+      },
+      "breathe": {
+        "config": {
+          "mode": "smooth",
+          "depth": 0.02,
+          "depth_x": 0.03,
+          "breaths": 1,
+          "breath_peaks": null,
+          "chest_y": 0.31,
+          "chest_rx": 0.83,
+          "chest_ry": 0.28,
+          "shoulder": 0.5,
+          "shoulder_lag": 0.08,
+          "chest_tilt": 0.0,
+          "chest_bias": 0.0,
+          "chest_dir": 0.0,
+          "chest_x": 0.0,
+          "chest_bias_y": 0.0,
+          "chest_flat": 0.0,
+          "inhale": 0.4,
+          "start_cell": 0,
+          "loop_cells": null,
+          "rigid_row": null,
+          "axis_x": null,
+          "torso_half": null,
+          "anatomy": null
+        },
+        "phases": [
+          0.0,
+          0.16666666666666666,
+          0.3333333333333333,
+          0.5,
+          0.6666666666666666,
+          0.8333333333333334
+        ],
+        "resolved": {
+          "anatomy": {
+            "width": 101,
+            "height": 151,
+            "axis_x": 52,
+            "neck_row": 66,
+            "neck_source": "bottleneck",
+            "rigid_row": 66,
+            "rigid_source": "neck",
+            "basis_row": 66,
+            "torso_half": 20,
+            "max_half": 52,
+            "torso_source": "auto",
+            "face": null,
+            "warnings": [
+              "face-absent: 대칭 눈쌍을 못 찾아 목만으로 경계를 정했다"
+            ]
+          },
+          "matches_sidecar": true,
+          "sidecar_drift": null,
+          "warnings": [
+            "face-absent: 대칭 눈쌍을 못 찾아 목만으로 경계를 정했다"
+          ]
+        }
+      }
+    },
+    {
+      "state": "walk",
+      "output": "C:\\Users\\nqxw1\\.gemini\\antigravity\\scratch\\jirai-sprite-demo\\run\\previews_curated\\walk.gif",
+      "frames": 7,
+      "fps": 6.0,
+      "loop": true,
+      "gif_report": {
+        "path": "C:\\Users\\nqxw1\\.gemini\\antigravity\\scratch\\jirai-sprite-demo\\run\\previews_curated\\walk.gif",
+        "frames": 7,
+        "delay_ticks": [
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16
+        ],
+        "loop": 0,
+        "transparent": true,
+        "disposal": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ]
+      }
+    }
+  ]
+}

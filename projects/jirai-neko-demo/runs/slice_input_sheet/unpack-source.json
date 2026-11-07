@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "kind": "sprite-gen-unpack-source",
+  "layout_source": "auto-detect",
+  "cell": {
+    "width": 110,
+    "height": 160
+  },
+  "atlas": "C:\\Katsuragi_Shin\\Aika 2D Sprite Tool\\projects\\jirai-neko-demo\\inputs\\input_sheet.png",
+  "manifest": null,
+  "direction": null
+}

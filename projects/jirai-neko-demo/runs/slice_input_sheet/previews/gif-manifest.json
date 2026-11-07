@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "kind": "sprite-gen-gif-run",
+  "run_dir": "C:\\Katsuragi_Shin\\Aika 2D Sprite Tool\\projects\\jirai-neko-demo\\runs\\slice_input_sheet",
+  "exports": [
+    {
+      "state": "idle",
+      "output": "C:\\Katsuragi_Shin\\Aika 2D Sprite Tool\\projects\\jirai-neko-demo\\runs\\slice_input_sheet\\previews\\idle.gif",
+      "frames": 6,
+      "fps": 6.0,
+      "loop": true,
+      "gif_report": {
+        "path": "C:\\Katsuragi_Shin\\Aika 2D Sprite Tool\\projects\\jirai-neko-demo\\runs\\slice_input_sheet\\previews\\idle.gif",
+        "frames": 6,
+        "delay_ticks": [
+          16,
+          16,
+          16,
+          16,
+          16,
+          16
+        ],
+        "loop": 0,
+        "transparent": true,
+        "disposal": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ]
+      }
+    },
+    {
+      "state": "walk",
+      "output": "C:\\Katsuragi_Shin\\Aika 2D Sprite Tool\\projects\\jirai-neko-demo\\runs\\slice_input_sheet\\previews\\walk.gif",
+      "frames": 8,
+      "fps": 6.0,
+      "loop": true,
+      "gif_report": {
+        "path": "C:\\Katsuragi_Shin\\Aika 2D Sprite Tool\\projects\\jirai-neko-demo\\runs\\slice_input_sheet\\previews\\walk.gif",
+        "frames": 8,
+        "delay_ticks": [
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16
+        ],
+        "loop": 0,
+        "transparent": true,
+        "disposal": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aika 2D Sprite Auto-Run Studio v2.0</title>
+  <link rel="stylesheet" href="/css/studio.css" />
+</head>
+<body>
+  <!-- Top Header -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-icon">🎀</span>
+      <div>
+        <h1>Aika 2D Sprite Auto-Run Studio <span class="ver">v2.0</span></h1>
+        <p class="subtitle">Auto-Detect Sprite Sheet • Codex CLI &amp; GitHub Skills • Normalized Frame Analyzer • Multi-Engine Exporter</p>
+      </div>
+    </div>
+
+    <div class="system-badges">
+      <div id="codexBadge" class="sys-pill">🤖 Codex CLI: Checking...</div>
+      <div id="skillBadge" class="sys-pill">🪄 Skills: Checking...</div>
+      <button id="openIdeBtn" class="btn btn-outline" title="Mở thư mục Project hiện tại trong Antigravity IDE / Explorer">
+        🚀 Mở trong Antigravity IDE
+      </button>
+    </div>
+  </header>
+
+  <!-- SSE Live Progress Banner -->
+  <div id="progressBanner" class="progress-banner hidden">
+    <div class="progress-info">
+      <span id="progressStage" class="stage-tag">WORKING</span>
+      <span id="progressText">Đang xử lý...</span>
+    </div>
+    <div class="progress-track">
+      <div id="progressBar" class="progress-fill" style="width: 0%"></div>
+    </div>
+  </div>
+
+  <!-- Main 3-Column Studio Layout -->
+  <main class="studio-grid">
+    <!-- COLUMN 1: Project, Inputs, GitHub Skills & WORK Button -->
+    <aside class="panel col-left">
+      <div class="panel-section">
+        <div class="section-header">
+          <h2>📁 1. Project &amp; Run</h2>
+          <button id="newProjectBtn" class="btn btn-sm">+ Mới</button>
+        </div>
+        <label class="field-label">Chọn Project:</label>
+        <select id="projectSelect" class="input-select"></select>
+
+        <label class="field-label" style="margin-top:8px;">Bản chạy (Run) đang mở:</label>
+        <select id="runSelect" class="input-select"></select>
+      </div>
+
+      <div class="panel-section">
+        <div class="section-header">
+          <h2>🖼️ 2. Ảnh Đầu Vào (Inputs)</h2>
+          <label class="btn btn-sm btn-pink" for="fileUploadInput">+ Thêm Ảnh</label>
+          <input id="fileUploadInput" type="file" accept="image/*" style="display:none;" />
+        </div>
+        <div id="dropZone" class="drop-zone">
+          Kéo &amp; thả ảnh Sprite Sheet hoặc Ảnh nhân vật tĩnh vào đây
+        </div>
+        <div id="inputList" class="item-list"></div>
+      </div>
+
+      <div class="panel-section">
+        <div class="section-header">
+          <h2>🪄 3. Kho GitHub Skills &amp; Prompt</h2>
+          <button id="previewSkillBtn" class="btn btn-sm" title="Xem trước nội dung SKILL.md (Read-Only)">📖 Xem Skill</button>
+        </div>
+        <label class="field-label">Chọn Skill dẫn đường cho AI:</label>
+        <select id="skillSelect" class="input-select"></select>
+
+        <label class="field-label" style="margin-top:8px;">Mô tả nhân vật / Prompt (tiếng Nhật/Việt/Anh):</label>
+        <textarea id="promptInput" class="input-textarea" rows="3" placeholder="Nhập mô tả nhân vật hoặc dán prompt thiết kế..."></textarea>
+
+        <label class="field-label" style="margin-top:8px;">Các hàng động tác (States):</label>
+        <div class="states-check-group" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+          <label class="checkbox-inline"><input type="checkbox" class="state-chk" value="idle" checked /> idle</label>
+          <label class="checkbox-inline"><input type="checkbox" class="state-chk" value="walk" checked /> walk</label>
+          <label class="checkbox-inline"><input type="checkbox" class="state-chk" value="run" /> run</label>
+          <label class="checkbox-inline"><input type="checkbox" class="state-chk" value="jump" /> jump</label>
+          <label class="checkbox-inline"><input type="checkbox" class="state-chk" value="attack" /> attack</label>
+        </div>
+
+        <div class="work-controls">
+          <button id="workAutoBtn" class="btn btn-work">
+            ⚡ WORK (Auto-Detect &amp; Chạy)
+          </button>
+          <div class="work-sub-btns">
+            <button id="workSliceBtn" class="btn btn-sm btn-secondary" title="Cắt frame từ ảnh Sprite Sheet và chạy ngay trong 2 giây">
+              ✂️ Cắt &amp; Chạy Ngay (2s)
+            </button>
+            <button id="workAiRegenBtn" class="btn btn-sm btn-secondary" title="Gọi Codex CLI + sprite-gen vẽ lại các hàng mới đồng bộ">
+              🤖 Codex Vẽ Lại (AI)
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- COLUMN 2: 2D Auto-Run Stage & Normalized Frame-by-Frame Analyzer -->
+    <section class="panel col-center">
+      <!-- Top: 2D Auto-Run Stage -->
+      <div class="stage-container">
+        <div class="stage-toolbar">
+          <div class="toolbar-group">
+            <label>Động tác:</label>
+            <select id="stateSelect" class="input-select-inline"></select>
+            <button id="rerollStateBtn" class="btn btn-sm" title="Gọi Codex vẽ lại riêng hàng động tác đang chọn mà không ảnh hưởng các hàng khác">🔄 Reroll Hàng Này</button>
+          </div>
+
+          <div class="toolbar-group">
+            <button id="runModeBtn" class="btn btn-sm btn-active">🏃 Chạy Tiến Tới (Forward Loop)</button>
+            <button id="pixelModeBtn" class="btn btn-sm">👾 Crisp Pixel Art</button>
+            <button id="zoomBtn" class="btn btn-sm">🔍 Zoom: 1x</button>
+            <button id="guidesBtn" class="btn btn-sm btn-active" title="Hiện đường trục mặt (Head Anchor) và mặt đất (Baseline)">🎯 Trục Đo</button>
+          </div>
+
+          <div class="toolbar-group">
+            <label>FPS: <span id="fpsVal">8</span></label>
+            <input id="fpsSlider" type="range" min="2" max="24" value="8" style="width:75px;" />
+            <label class="btn btn-sm" for="bgUploadInput" title="Tải ảnh nền tùy chọn để cuộn phía sau nhân vật">🌄 Nền</label>
+            <input id="bgUploadInput" type="file" accept="image/*" style="display:none;" />
+          </div>
+        </div>
+
+        <div class="canvas-wrapper">
+          <canvas id="stageCanvas" width="760" height="330"></canvas>
+          <div class="stage-overlay-hint">
+            🕹️ Điều khiển trực tiếp: <b>A / D</b> hoặc <b>◀ / ▶</b> để chạy, <b>Space</b> để nhảy • Hoặc để nhân vật tự chạy Auto-Run!
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom: Normalized Frame-by-Frame Analyzer -->
+      <div class="analyzer-container">
+        <div class="analyzer-header">
+          <div>
+            <h2>🔍 Phân Tích Từng Frame Chuẩn Hóa (Normalized Frame Analyzer)</h2>
+            <p id="analyzerSummaryText" class="analyzer-sub">Đo độ lệch trục cổ/mặt (chống nhiễu tóc) &amp; tỷ lệ thay đổi vùng chân R_leg (%)</p>
+          </div>
+          <div class="analyzer-actions">
+            <label class="checkbox-inline" title="Tự động thêm hiệu ứng thở mượt (Smooth Breathe) cho trạng thái Idle">
+              <input type="checkbox" id="breatheCheck" checked /> +Nhịp thở (Breathe)
+            </label>
+            <button id="stabilizeBtn" class="btn btn-pink">
+              🔧 1-Click Auto-Stabilize (Khóa Đầu &amp; Lọc Frame Trùng)
+            </button>
+            <button id="resetCurationBtn" class="btn btn-sm btn-outline" title="Bỏ curation.json để xem lại frame gốc khi chưa khóa đầu">
+              ↩️ Khôi phục Gốc
+            </button>
+          </div>
+        </div>
+
+        <div id="framesTimeline" class="frames-timeline"></div>
+      </div>
+    </section>
+
+    <!-- COLUMN 3: Asset Downloads & 2-Tier Code Exporter -->
+    <aside class="panel col-right">
+      <div class="panel-section">
+        <h2>📦 4. Xuất Asset (Atlas &amp; GIFs)</h2>
+        <div id="assetLinks" class="asset-links"></div>
+        <div id="gifPreviewsGrid" class="gif-previews-grid"></div>
+      </div>
+
+      <div class="panel-section code-section">
+        <div class="section-header">
+          <h2>💻 5. Xuất Code Tức Thì (0s)</h2>
+          <div class="engine-tabs">
+            <button class="eng-tab active" data-engine="dxlib">DxLib C++</button>
+            <button class="eng-tab" data-engine="html5">HTML5</button>
+            <button class="eng-tab" data-engine="phaser3">Phaser 3</button>
+            <button class="eng-tab" data-engine="godot4">Godot 4</button>
+            <button class="eng-tab" data-engine="unity">Unity C#</button>
+          </div>
+        </div>
+
+        <div class="code-toolbar">
+          <span id="codeFilename" class="code-filename">sprite_autorun_player.html</span>
+          <div>
+            <button id="copyCodeBtn" class="btn btn-sm">📋 Copy</button>
+            <a id="downloadCodeLink" class="btn btn-sm btn-pink" href="#" download>💾 Tải File</a>
+          </div>
+        </div>
+        <pre id="codePreviewBox" class="code-box">Đang tải code...</pre>
+      </div>
+
+      <div class="panel-section">
+        <h2>🛡️ 6. AI Custom Code (Sandbox)</h2>
+        <input id="aiCodePrompt" class="input-text" type="text" value="Thêm nhảy kép Space, bấm J bắn tim hồng, có thanh máu HP" />
+        <div class="work-sub-btns" style="margin-top:8px;">
+          <button id="genAiCodeBtn" class="btn btn-sm btn-pink">✨ Sinh Code Tùy Chỉnh</button>
+          <button id="runSandboxBtn" class="btn btn-sm btn-active">▶️ Chạy Thử Trong Sandbox</button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Modal: Read-Only Skill / Sandbox / Error Gate -->
+  <div id="modalBackdrop" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalTitle">Thông tin</h3>
+        <button id="modalCloseBtn" class="btn btn-sm">✕ Đóng</button>
+      </div>
+      <div id="modalBody" class="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="/js/stage_player.js"></script>
+  <script src="/js/frame_inspector.js"></script>
+  <script src="/js/code_panel.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

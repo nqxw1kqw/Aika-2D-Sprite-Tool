@@ -1,0 +1,83 @@
+{
+  "ok": true,
+  "engine": "component-row",
+  "kind": "sprite-gen-inspect-report",
+  "run_dir": "C:\\Users\\nqxw1\\.gemini\\antigravity\\scratch\\jirai-sprite-demo\\codex_run",
+  "states": [
+    "idle",
+    "walk"
+  ],
+  "thresholds": {
+    "histogram_min": 0.0,
+    "dhash_min": 0.55,
+    "motion_min": 0.01
+  },
+  "rows": [
+    {
+      "state": "idle",
+      "source": "frames",
+      "expected_frames": 4,
+      "found_frames": 4,
+      "natural_pose_count": 4,
+      "frame_files": [
+        "frames/idle/frame-0.png",
+        "frames/idle/frame-1.png",
+        "frames/idle/frame-2.png",
+        "frames/idle/frame-3.png"
+      ],
+      "metrics": {
+        "histogram_intersection": {
+          "min": 0.9620583202629901,
+          "mean": 0.9753689770211361
+        },
+        "dhash_similarity": {
+          "min": 0.984375,
+          "mean": 0.9895833333333334
+        },
+        "motion_presence": 0.026440988179125817,
+        "centroid_sigma": {
+          "x": 0.21569595379782755,
+          "y": 1.7273202977583768
+        }
+      },
+      "ok": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "state": "walk",
+      "source": "frames",
+      "expected_frames": 6,
+      "found_frames": 6,
+      "natural_pose_count": 6,
+      "frame_files": [
+        "frames/walk/frame-0.png",
+        "frames/walk/frame-1.png",
+        "frames/walk/frame-2.png",
+        "frames/walk/frame-3.png",
+        "frames/walk/frame-4.png",
+        "frames/walk/frame-5.png"
+      ],
+      "metrics": {
+        "histogram_intersection": {
+          "min": 0.9591095296082521,
+          "mean": 0.9727265174285785
+        },
+        "dhash_similarity": {
+          "min": 0.90625,
+          "mean": 0.9458333333333333
+        },
+        "motion_presence": 0.03776678347120098,
+        "centroid_sigma": {
+          "x": 0.28340229856522475,
+          "y": 3.139813531233175
+        }
+      },
+      "ok": true,
+      "errors": [],
+      "warnings": []
+    }
+  ],
+  "errors": [],
+  "warnings": []
+}

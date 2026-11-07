@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "kind": "sprite-gen-request",
+  "engine": "component-row",
+  "character": {
+    "id": "jirai_neko",
+    "description": "2D chibi side-view anime game sprite of a Jirai-kei x Ryousangata x Cat-motif girl (黒×ピンクの地雷系美少女, 157cm petite chibi proportions) facing right: black hair with pink gradient tips in long wavy twintails, straight bangs (ぱっつん前髪), large pastel pink ribbon and white cat-shaped hairclip (猫型ヘアクリップ), pink-purple eyes with heart highlights, black oversized Jirai-kei hoodie with pink criss-cross ribbon lacing on sleeves, frilly blouse, black-and-pink plaid pleated mini skirt, black lace knee-high socks, and black platform lace-up boots",
+    "base_image": "base-source.png"
+  },
+  "cell": {
+    "shape": "square",
+    "width": 256,
+    "height": 256,
+    "safe_margin_x": 24,
+    "safe_margin_y": 24,
+    "size": 256,
+    "safe_margin": 24
+  },
+  "chroma_key": {
+    "name": "green",
+    "hex": "#00FF00",
+    "rgb": [
+      0,
+      255,
+      0
+    ],
+    "selection": "manual"
+  },
+  "states": {
+    "idle": {
+      "frames": 4,
+      "fps": 5,
+      "loop": true,
+      "action": "side-view facing right, subtle idle breathing, gentle twintail hair and ribbon sway, and one soft eye blink while feet stay firmly planted on the ground line"
+    },
+    "walk": {
+      "frames": 6,
+      "fps": 8,
+      "loop": true,
+      "action": "side-view facing right, smooth even 6-frame walking cycle in place: clear alternating left-foot and right-foot steps (contact, passing, contact, passing), natural opposite arm swing, keeping head height and body proportions strictly identical across all 6 frames"
+    }
+  },
+  "style": "high-quality Japanese 2D anime game chibi sprite (繊細なアニメ塗り, 丁寧な線画), clean uniform lineart, pastel pink accents, strictly consistent head-to-body proportions across every frame",
+  "layout": "taxonomy/v1",
+  "fit": {
+    "resample": "lanczos",
+    "align_x": "centroid",
+    "align_y": "bottom",
+    "pixel_unfake": false
+  },
+  "chroma": {
+    "mode": "rgb",
+    "unmix_reach": 4,
+    "spill_max_fraction": 0.005
+  }
+}

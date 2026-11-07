@@ -1,0 +1,179 @@
+{
+  "characterId": "run",
+  "engine": "component-row",
+  "game_input": "sprite-sheet-alpha.png",
+  "degraded_static_fallback": false,
+  "curation_applied": true,
+  "frame_variant": "pixel",
+  "sprite_sheet_alpha": "sprite-sheet-alpha.png",
+  "sprite_sheet_alpha_report": "sprite-sheet-alpha.report.json",
+  "base_image": null,
+  "cell": {
+    "shape": "rect",
+    "width": 110,
+    "height": 160,
+    "size": 110,
+    "safe_margin": 0
+  },
+  "chroma_key": {
+    "name": "magenta",
+    "hex": "#FF00FF",
+    "rgb": [
+      255,
+      0,
+      255
+    ]
+  },
+  "animation": {
+    "cellWidth": 110,
+    "cellHeight": 160,
+    "columns": 7,
+    "rows": {
+      "idle": {
+        "row": 0,
+        "frames": 6,
+        "fps": 6,
+        "durations_ms": [
+          167,
+          167,
+          167,
+          167,
+          167,
+          167
+        ],
+        "loop": true,
+        "frame_variant": "pixel",
+        "breathe": {
+          "anatomy": {
+            "width": 101,
+            "height": 151,
+            "axis_x": 52,
+            "neck_row": 66,
+            "neck_source": "bottleneck",
+            "rigid_row": 66,
+            "rigid_source": "neck",
+            "basis_row": 66,
+            "torso_half": 20,
+            "max_half": 52,
+            "torso_source": "auto",
+            "face": null,
+            "warnings": [
+              "face-absent: 대칭 눈쌍을 못 찾아 목만으로 경계를 정했다"
+            ]
+          },
+          "matches_sidecar": true,
+          "sidecar_drift": null,
+          "warnings": [
+            "face-absent: 대칭 눈쌍을 못 찾아 목만으로 경계를 정했다"
+          ]
+        }
+      },
+      "walk": {
+        "row": 1,
+        "frames": 7,
+        "fps": 6,
+        "durations_ms": [
+          167,
+          167,
+          167,
+          167,
+          167,
+          167,
+          167
+        ],
+        "loop": true,
+        "frame_variant": "pixel"
+      }
+    }
+  },
+  "frame_layout": {
+    "sheetWidth": 770,
+    "sheetHeight": 320,
+    "cellWidth": 110,
+    "cellHeight": 160,
+    "rows": {
+      "idle": [
+        {
+          "x": 0,
+          "y": 0,
+          "w": 110,
+          "h": 160
+        },
+        {
+          "x": 110,
+          "y": 0,
+          "w": 110,
+          "h": 160
+        },
+        {
+          "x": 220,
+          "y": 0,
+          "w": 110,
+          "h": 160
+        },
+        {
+          "x": 330,
+          "y": 0,
+          "w": 110,
+          "h": 160
+        },
+        {
+          "x": 440,
+          "y": 0,
+          "w": 110,
+          "h": 160
+        },
+        {
+          "x": 550,
+          "y": 0,
+          "w": 110,
+          "h": 160
+        }
+      ],
+      "walk": [
+        {
+          "x": 0,
+          "y": 160,
+          "w": 110,
+          "h": 160
+        },
+        {
+          "x": 110,
+          "y": 160,
+          "w": 110,
+          "h": 160
+        },
+        {
+          "x": 220,
+          "y": 160,
+          "w": 110,
+          "h": 160
+        },
+        {
+          "x": 330,
+          "y": 160,
+          "w": 110,
+          "h": 160
+        },
+        {
+          "x": 440,
+          "y": 160,
+          "w": 110,
+          "h": 160
+        },
+        {
+          "x": 550,
+          "y": 160,
+          "w": 110,
+          "h": 160
+        },
+        {
+          "x": 660,
+          "y": 160,
+          "w": 110,
+          "h": 160
+        }
+      ]
+    }
+  }
+}

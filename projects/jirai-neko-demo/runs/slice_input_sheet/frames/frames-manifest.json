@@ -1,0 +1,46 @@
+{
+  "ok": true,
+  "engine": "component-row",
+  "run_dir": "C:\\Katsuragi_Shin\\Aika 2D Sprite Tool\\projects\\jirai-neko-demo\\runs\\slice_input_sheet",
+  "cell": {
+    "shape": "rect",
+    "width": 110,
+    "height": 160,
+    "size": 110,
+    "safe_margin": 0
+  },
+  "rows": [
+    {
+      "state": "idle",
+      "frames": 6,
+      "method": "unpacked",
+      "files": [
+        "frames/idle/frame-0.png",
+        "frames/idle/frame-1.png",
+        "frames/idle/frame-2.png",
+        "frames/idle/frame-3.png",
+        "frames/idle/frame-4.png",
+        "frames/idle/frame-5.png"
+      ],
+      "ok": true
+    },
+    {
+      "state": "walk",
+      "frames": 8,
+      "method": "unpacked",
+      "files": [
+        "frames/walk/frame-0.png",
+        "frames/walk/frame-1.png",
+        "frames/walk/frame-2.png",
+        "frames/walk/frame-3.png",
+        "frames/walk/frame-4.png",
+        "frames/walk/frame-5.png",
+        "frames/walk/frame-6.png",
+        "frames/walk/frame-7.png"
+      ],
+      "ok": true
+    }
+  ],
+  "errors": [],
+  "warnings": []
+}

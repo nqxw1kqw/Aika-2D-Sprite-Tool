@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "kind": "sprite-gen-unpack-source",
+  "layout_source": "auto-detect",
+  "cell": {
+    "width": 110,
+    "height": 160
+  },
+  "atlas": "C:\\Users\\nqxw1\\.gemini\\antigravity\\scratch\\jirai-sprite-demo\\input_sheet.png",
+  "manifest": null,
+  "direction": null
+}
