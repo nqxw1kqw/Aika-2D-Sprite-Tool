@@ -27,12 +27,23 @@ def get_antigravity_status() -> dict[str, Any]:
 
 def open_in_antigravity_ide(target_path: str | Path) -> dict[str, Any]:
     """Open a project folder or file in Antigravity IDE (or Explorer if IDE launcher is absent)."""
+    resolved = Path(target_path).resolve()
+    if not resolved.exists():
+        return {"ok": False, "error": f"Target path does not exist: {resolved}"}
+
     bins = find_antigravity_binaries()
-    path_str = str(Path(target_path).resolve())
+    path_str = str(resolved)
     ide_cmd = bins.get("antigravity_ide")
     if ide_cmd and Path(ide_cmd).exists():
-        subprocess.Popen([ide_cmd, path_str], shell=True)
-        return {"ok": True, "opened_with": "antigravity-ide", "target": path_str}
+        try:
+            if os.name == "nt" and ide_cmd.lower().endswith((".cmd", ".bat")):
+                cmd = [os.environ.get("COMSPEC", "cmd.exe"), "/c", ide_cmd, path_str]
+            else:
+                cmd = [ide_cmd, path_str]
+            subprocess.Popen(cmd, shell=False)
+            return {"ok": True, "opened_with": "antigravity-ide", "target": path_str}
+        except OSError as exc:
+            return {"ok": False, "error": f"Failed to launch IDE: {exc}"}
     if os.name == "nt":
         os.startfile(path_str)
         return {"ok": True, "opened_with": "explorer", "target": path_str}

@@ -10,12 +10,35 @@ from typing import Any
 
 from app.config import PROJECTS_DIR
 from app.core.detector import analyze_input_image
-from app.core.frame_analyzer import analyze_run_directory
+from app.core.frame_analyzer import analyze_run_directory, list_frame_files
+
+
+def _is_safe_segment(value: Any) -> bool:
+    """Return True if value is a non-empty single path segment with no traversal or separators."""
+    return (
+        isinstance(value, str)
+        and bool(value)
+        and value.strip() not in (".", "..")
+        and not any(ch in value for ch in ("/", "\\", ":", "\x00"))
+    )
 
 
 def _slugify(name: str) -> str:
     slug = re.sub(r"[^a-zA-Z0-9_-]+", "-", name.strip().lower()).strip("-")
     return slug or f"project-{int(time.time())}"
+
+
+def _read_project_meta(project_id: str) -> dict[str, Any]:
+    """Read project.json, falling back to minimal defaults if it is missing, unreadable or not an object."""
+    pjson = PROJECTS_DIR / project_id / "project.json"
+    default: dict[str, Any] = {"id": project_id, "name": project_id}
+    if not pjson.exists():
+        return default
+    try:
+        meta = json.loads(pjson.read_text(encoding="utf-8"))
+    except Exception:
+        return default
+    return meta if isinstance(meta, dict) else default
 
 
 def ensure_default_demo_project() -> None:
@@ -63,8 +86,17 @@ def list_projects() -> list[dict[str, Any]]:
 
 
 def create_project(name: str, prompt: str = "", default_skill: str = "sprite-gen") -> dict[str, Any]:
-    """Create a new project directory structure."""
-    pid = _slugify(name)
+    """Create a new project directory structure.
+
+    If the slug is already taken by an existing project, a numeric suffix (`-2`, `-3`, ...) is
+    appended so the existing project's `project.json` is never overwritten.
+    """
+    base_pid = _slugify(name)
+    pid = base_pid
+    suffix = 2
+    while (PROJECTS_DIR / pid).exists():
+        pid = f"{base_pid}-{suffix}"
+        suffix += 1
     pdir = PROJECTS_DIR / pid
     (pdir / "inputs").mkdir(parents=True, exist_ok=True)
     (pdir / "runs").mkdir(parents=True, exist_ok=True)
@@ -85,14 +117,13 @@ def create_project(name: str, prompt: str = "", default_skill: str = "sprite-gen
 
 def update_project_meta(project_id: str, updates: dict[str, Any]) -> dict[str, Any]:
     """Update fields in project.json."""
+    if not _is_safe_segment(project_id):
+        raise ValueError(f"Invalid project_id: {project_id!r}")
     pdir = PROJECTS_DIR / project_id
+    if not pdir.is_dir():
+        raise FileNotFoundError(f"Project '{project_id}' not found.")
     pjson = pdir / "project.json"
-    meta: dict[str, Any] = {"id": project_id, "name": project_id}
-    if pjson.exists():
-        try:
-            meta = json.loads(pjson.read_text(encoding="utf-8"))
-        except Exception:
-            pass
+    meta = _read_project_meta(project_id)
     meta.update(updates)
     pjson.write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
     return meta
@@ -101,17 +132,13 @@ def update_project_meta(project_id: str, updates: dict[str, Any]) -> dict[str, A
 def get_project_details(project_id: str) -> dict[str, Any]:
     """Load complete details, inputs, runs, and active run manifest/analysis for a project."""
     ensure_default_demo_project()
+    if not _is_safe_segment(project_id):
+        return {"ok": False, "error": f"Invalid project_id: {project_id!r}"}
     pdir = PROJECTS_DIR / project_id
-    if not pdir.exists():
+    if not pdir.is_dir():
         return {"ok": False, "error": f"Project '{project_id}' not found."}
 
-    pjson = pdir / "project.json"
-    meta: dict[str, Any] = {"id": project_id, "name": project_id}
-    if pjson.exists():
-        try:
-            meta = json.loads(pjson.read_text(encoding="utf-8"))
-        except Exception:
-            pass
+    meta = _read_project_meta(project_id)
 
     inputs_dir = pdir / "inputs"
     inputs_dir.mkdir(parents=True, exist_ok=True)
@@ -140,12 +167,14 @@ def get_project_details(project_id: str) -> dict[str, Any]:
                 }
             )
 
-    active_run = meta.get("active_run")
-    if (not active_run or not (runs_dir / str(active_run) / "manifest.json").exists()) and runs_list:
+    raw_active_run = meta.get("active_run")
+    active_run: str | None = raw_active_run if _is_safe_segment(raw_active_run) else None
+    if (not active_run or not (runs_dir / active_run / "manifest.json").exists()) and runs_list:
         active_run = runs_list[0]["id"]
 
-    active_input = meta.get("active_input")
-    if (not active_input or not (inputs_dir / str(active_input)).exists()) and inputs_list:
+    raw_active_input = meta.get("active_input")
+    active_input: str | None = raw_active_input if _is_safe_segment(raw_active_input) else None
+    if (not active_input or not (inputs_dir / active_input).is_file()) and inputs_list:
         active_input = inputs_list[0]["name"]
 
     run_detail: dict[str, Any] | None = None
@@ -155,9 +184,9 @@ def get_project_details(project_id: str) -> dict[str, Any]:
     return {
         "ok": True,
         "id": project_id,
-        "name": meta.get("name", project_id),
-        "prompt": meta.get("prompt", ""),
-        "default_skill": meta.get("default_skill", "sprite-gen"),
+        "name": str(meta.get("name") or project_id),
+        "prompt": str(meta.get("prompt") or ""),
+        "default_skill": str(meta.get("default_skill") or "sprite-gen"),
         "active_input": active_input,
         "active_run": active_run,
         "inputs": inputs_list,
@@ -168,12 +197,20 @@ def get_project_details(project_id: str) -> dict[str, Any]:
 
 def get_run_details(project_id: str, run_id: str) -> dict[str, Any]:
     """Load manifest.json, frame analysis, and preview URLs for a specific run."""
+    if not _is_safe_segment(project_id) or not _is_safe_segment(run_id):
+        return {"ok": False, "error": "Invalid project_id or run_id"}
     rdir = PROJECTS_DIR / project_id / "runs" / run_id
     mpath = rdir / "manifest.json"
     if not mpath.exists():
         return {"ok": False, "error": f"Run '{run_id}' has no manifest.json"}
 
-    manifest = json.loads(mpath.read_text(encoding="utf-8"))
+    try:
+        manifest = json.loads(mpath.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        # A single corrupt run must not break project listing / loading for the whole Studio.
+        return {"ok": False, "run_id": run_id, "error": f"Run '{run_id}' has an unreadable manifest.json ({exc})"}
+    if not isinstance(manifest, dict):
+        return {"ok": False, "run_id": run_id, "error": f"Run '{run_id}' manifest.json is not a JSON object"}
     analysis = analyze_run_directory(rdir)
     ts = int(time.time() * 1000)
 
@@ -189,7 +226,7 @@ def get_run_details(project_id: str, run_id: str) -> dict[str, Any]:
     if frames_root.exists():
         for sdir in sorted(frames_root.iterdir()):
             if sdir.is_dir() and not sdir.name.startswith("_"):
-                pngs = sorted(sdir.glob("frame-*.png"), key=lambda p: int(p.stem.split("-")[1]))
+                pngs = list_frame_files(sdir)
                 frame_urls[sdir.name] = [
                     f"/projects/{project_id}/runs/{run_id}/frames/{sdir.name}/{p.name}?t={ts}" for p in pngs
                 ]
