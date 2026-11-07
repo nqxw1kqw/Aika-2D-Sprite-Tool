@@ -8,7 +8,8 @@ import subprocess
 from pathlib import Path
 from typing import Any, Callable
 
-from PIL import Image
+import numpy as np
+from PIL import Image, UnidentifiedImageError
 
 from app.config import SPRITE_GEN_EXE, SPRITE_GEN_PYTHON, SPRITE_GEN_ROOT
 
@@ -67,33 +68,61 @@ def build_states_spec(states_csv: str) -> dict[str, dict[str, Any]]:
     return out
 
 
-def run_sprite_gen_cmd(
-    args: list[str],
-    cwd: Path | None = None,
-    timeout: int = 300,
-) -> dict[str, Any]:
-    """Run a sprite-gen CLI subcommand and parse JSON/stdout/stderr, catching Exit 75."""
-    cmd = [str(SPRITE_GEN_EXE), *args]
-    proc = subprocess.run(
-        cmd,
-        cwd=str(cwd or SPRITE_GEN_ROOT),
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        timeout=timeout,
-    )
+def _subprocess_failure(cmd: list[str], exc: BaseException, timeout: int) -> dict[str, Any]:
+    """Build a structured failure result for a subprocess that could not run to completion."""
+    if isinstance(exc, subprocess.TimeoutExpired):
+        return {
+            "ok": False,
+            "exit_code": None,
+            "error_code": "TIMEOUT",
+            "data": None,
+            "stdout": "",
+            "stderr": f"Command timed out after {timeout}s: {cmd[0]}",
+            "message_vi": f"Lệnh sprite-gen chạy quá thời gian cho phép ({timeout}s).",
+        }
+    return {
+        "ok": False,
+        "exit_code": None,
+        "error_code": "SPRITE_GEN_MISSING",
+        "data": None,
+        "stdout": "",
+        "stderr": f"Cannot execute {cmd[0]}: {exc}",
+        "message_vi": (
+            "Không chạy được sprite-gen. Hãy kiểm tra SPRITE_GEN_ROOT và môi trường .venv của sprite-gen."
+        ),
+    }
+
+
+def _run_subprocess(cmd: list[str], cwd: Path, timeout: int) -> subprocess.CompletedProcess[str] | dict[str, Any]:
+    """Run a command, returning either the completed process or a structured failure dict."""
+    try:
+        return subprocess.run(
+            cmd,
+            cwd=str(cwd),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=timeout,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        # OSError covers FileNotFoundError / PermissionError (missing binary or cwd).
+        return _subprocess_failure(cmd, exc, timeout)
+
+
+def _check_exit_75(proc: subprocess.CompletedProcess[str]) -> dict[str, Any] | None:
+    """Return a structured CODEX_UNAVAILABLE payload if proc exited with code 75 or emitted codex-unavailable."""
     stdout = proc.stdout.strip()
     stderr = proc.stderr.strip()
-
-    # Check for Exit 75 (codex-unavailable question)
     if proc.returncode == 75 or "codex-unavailable:" in stderr or "codex-unavailable:" in stdout:
         combined = f"{stderr}\n{stdout}"
         m = EXIT_75_RE.search(combined)
         ask_payload: dict[str, Any] = {"cause": "login"}
         if m:
             try:
-                ask_payload = json.loads(m.group(1))
+                parsed = json.loads(m.group(1))
+                if isinstance(parsed, dict):
+                    ask_payload = parsed
             except Exception:
                 pass
         return {
@@ -108,6 +137,24 @@ def run_sprite_gen_cmd(
                 "Vui lòng chọn: (1) Đăng nhập lại `codex login`, (2) Chuyển sang Grok / OpenAI API, hoặc (3) Tạm dừng."
             ),
         }
+    return None
+
+
+def run_sprite_gen_cmd(
+    args: list[str],
+    cwd: Path | None = None,
+    timeout: int = 300,
+) -> dict[str, Any]:
+    """Run a sprite-gen CLI subcommand and parse JSON/stdout/stderr, catching Exit 75."""
+    cmd = [str(SPRITE_GEN_EXE), *args]
+    proc = _run_subprocess(cmd, cwd or SPRITE_GEN_ROOT, timeout)
+    if isinstance(proc, dict):
+        return proc
+    exit_75 = _check_exit_75(proc)
+    if exit_75 is not None:
+        return exit_75
+    stdout = proc.stdout.strip()
+    stderr = proc.stderr.strip()
 
     parsed_json: Any = None
     if stdout:
@@ -302,15 +349,12 @@ def interpolate_inbetween_frame(
         provider,
         "--extract",
     ]
-    proc = subprocess.run(
-        cmd,
-        cwd=str(SPRITE_GEN_ROOT),
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        timeout=300,
-    )
+    proc = _run_subprocess(cmd, SPRITE_GEN_ROOT, 300)
+    if isinstance(proc, dict):
+        return proc
+    exit_75 = _check_exit_75(proc)
+    if exit_75 is not None:
+        return exit_75
     if proc.returncode == 0:
         recompose_run(run_dir)
     return {
@@ -344,6 +388,46 @@ def reroll_single_state(
     }
 
 
+def _fallback_horizontal_tile(
+    prep_path: Path,
+    out_path: Path,
+    period: int,
+    overlap: int,
+    report_path: Path,
+) -> dict[str, Any]:
+    """Create a horizontally seamless `period`-wide RGBA tile via smooth cosine overlap blending."""
+    with Image.open(prep_path) as im:
+        arr = np.asarray(im.convert("RGBA"), dtype=np.float32)
+
+    h, _, _ = arr.shape
+    tile = arr[:, :period, :].copy()
+    tail = arr[:, period : period + overlap, :]
+    weights = (0.5 - 0.5 * np.cos(np.linspace(0.0, np.pi, overlap, dtype=np.float32)))[None, :, None]
+    # At x=0, weight=0 -> pixel comes from tail[:, 0] == arr[:, period], matching tile[:, period-1]'s neighbor!
+    tile[:, :overlap, :] = tail * (1.0 - weights) + tile[:, :overlap, :] * weights
+    out_u8 = np.clip(np.round(tile), 0, 255).astype(np.uint8)
+    Image.fromarray(out_u8, mode="RGBA").save(out_path)
+
+    report = {
+        "ok": True,
+        "engine": "pillow-cosine-fallback",
+        "axis": "x",
+        "period": period,
+        "overlap": overlap,
+        "width": period,
+        "height": int(h),
+        "out": str(out_path),
+    }
+    report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    return {
+        "ok": True,
+        "exit_code": 0,
+        "data": report,
+        "stdout": "",
+        "stderr": "",
+    }
+
+
 def make_seamless_background_tile(
     source_path: str | Path,
     out_path: str | Path,
@@ -351,42 +435,61 @@ def make_seamless_background_tile(
     overlap: int = 32,
 ) -> dict[str, Any]:
     """Ensure source image meets period+overlap width and run `sprite-gen background-tile`."""
+    if period < 16 or overlap < 1 or overlap >= period:
+        return {
+            "ok": False,
+            "error_code": "INVALID_PARAMS",
+            "stderr": f"Invalid period={period} / overlap={overlap} (require period >= 16 and 1 <= overlap < period).",
+        }
+
     src = Path(source_path)
+    if not src.is_file():
+        return {"ok": False, "error_code": "FILE_NOT_FOUND", "stderr": f"Source image not found: {src}"}
+
     out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
 
     min_w = period + overlap
     prep_path = out.parent / f"_prep_{src.stem}.png"
-    with Image.open(src) as im:
-        rgba = im.convert("RGBA")
-        w, h = rgba.size
-        if w < min_w:
-            scale = (min_w + 16) / max(1, w)
-            rgba = rgba.resize((int(round(w * scale)), int(round(h * scale))), Image.Resampling.LANCZOS)
-        rgba.save(prep_path)
+    try:
+        with Image.open(src) as im:
+            rgba = im.convert("RGBA")
+            w, h = rgba.size
+            if w < 2 or h < 2:
+                return {"ok": False, "error_code": "INVALID_IMAGE", "stderr": f"Background image too small ({w}x{h})."}
+            if w < min_w:
+                scale = (min_w + 16) / max(1, w)
+                rgba = rgba.resize((int(round(w * scale)), int(round(h * scale))), Image.Resampling.LANCZOS)
+            rgba.save(prep_path)
+    except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError) as exc:
+        return {"ok": False, "error_code": "CORRUPT_IMAGE", "stderr": f"Invalid background image: {exc}"}
 
     report_path = out.with_suffix(".report.json")
-    res = run_sprite_gen_cmd(
-        [
-            "background-tile",
-            "--source",
-            str(prep_path),
-            "--out",
-            str(out),
-            "--period",
-            str(period),
-            "--overlap",
-            str(overlap),
-            "--axis",
-            "x",
-            "--report",
-            str(report_path),
-        ]
-    )
-    if prep_path.exists():
-        try:
-            prep_path.unlink()
-        except Exception:
-            pass
-    return res
+    try:
+        res = run_sprite_gen_cmd(
+            [
+                "background-tile",
+                "--source",
+                str(prep_path),
+                "--out",
+                str(out),
+                "--period",
+                str(period),
+                "--overlap",
+                str(overlap),
+                "--axis",
+                "x",
+                "--report",
+                str(report_path),
+            ]
+        )
+        if res.get("error_code") == "SPRITE_GEN_MISSING":
+            res = _fallback_horizontal_tile(prep_path, out, period, overlap, report_path)
+        return res
+    finally:
+        if prep_path.exists():
+            try:
+                prep_path.unlink()
+            except OSError:
+                pass
 

@@ -66,7 +66,7 @@ def analyze_input_image(image_path: str | Path) -> dict[str, Any]:
             im_rgba = im.convert("RGBA")
             width, height = im_rgba.size
             arr = np.array(im_rgba)
-    except (UnidentifiedImageError, OSError, ValueError) as exc:
+    except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError) as exc:
         return {
             "ok": False,
             "kind": "invalid",

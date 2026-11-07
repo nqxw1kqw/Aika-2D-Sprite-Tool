@@ -15,6 +15,7 @@ Implements resolution-independent metrics for any 2D sprite or pixel art run:
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -43,6 +44,27 @@ def _measure_leading_face_x(arr: np.ndarray, top0: int, char_h: float, facing: s
     return float(np.median(edges))
 
 
+_FRAME_FILE_RE = re.compile(r"^frame-(\d+)\.png$", re.IGNORECASE)
+
+
+def list_frame_files(state_dir: str | Path) -> list[Path]:
+    """Return `frame-<N>.png` files in a state directory, sorted numerically by N.
+
+    Files that match the `frame-*.png` glob but do not carry an integer index
+    (e.g. `frame-old.png`) are ignored instead of crashing the numeric sort.
+    """
+    sdir = Path(state_dir)
+    if not sdir.is_dir():
+        return []
+    indexed: list[tuple[int, Path]] = []
+    for p in sdir.glob("frame-*.png"):
+        m = _FRAME_FILE_RE.match(p.name)
+        if m:
+            indexed.append((int(m.group(1)), p))
+    indexed.sort(key=lambda t: t[0])
+    return [p for _, p in indexed]
+
+
 def analyze_state_frames(
     frames_dir: str | Path,
     state_name: str = "walk",
@@ -52,7 +74,7 @@ def analyze_state_frames(
 ) -> dict[str, Any]:
     """Analyze all frame-*.png files in a state directory and return per-frame & summary metrics."""
     fdir = Path(frames_dir)
-    all_files = sorted(fdir.glob("frame-*.png"), key=lambda p: int(p.stem.split("-")[1]))
+    all_files = list_frame_files(fdir)
     if not all_files:
         return {
             "ok": False,
@@ -74,30 +96,55 @@ def analyze_state_frames(
     # Load RGBA arrays and apply any active curation transforms (dx, dy)
     raw_arrays: dict[int, np.ndarray] = {}
     first_im: Image.Image | None = None
+    expected_shape: tuple[int, int] | None = None
     for idx, fp in enumerate(all_files):
-        with Image.open(fp) as im:
-            rgba = im.convert("RGBA")
-            if first_im is None:
-                first_im = rgba.copy()
-            arr = np.array(rgba, dtype=float)
-            tr = transforms.get(str(idx), {})
-            dx = int(round(float(tr.get("dx", 0))))
-            dy = int(round(float(tr.get("dy", 0))))
-            if dx != 0 or dy != 0:
-                shifted = np.zeros_like(arr)
-                h, w = arr.shape[:2]
-                src_x0 = max(0, -dx)
-                src_x1 = min(w, w - dx)
-                dst_x0 = max(0, dx)
-                dst_x1 = min(w, w + dx)
-                src_y0 = max(0, -dy)
-                src_y1 = min(h, h - dy)
-                dst_y0 = max(0, dy)
-                dst_y1 = min(h, h + dy)
-                if src_x1 > src_x0 and src_y1 > src_y0:
-                    shifted[dst_y0:dst_y1, dst_x0:dst_x1] = arr[src_y0:src_y1, src_x0:src_x1]
-                arr = shifted
-            raw_arrays[idx] = arr
+        try:
+            with Image.open(fp) as im:
+                rgba = im.convert("RGBA")
+                if first_im is None:
+                    first_im = rgba.copy()
+                arr = np.array(rgba, dtype=float)
+        except (OSError, ValueError, Image.DecompressionBombError) as exc:
+            return {
+                "ok": False,
+                "state": state_name,
+                "error": f"Corrupt frame '{fp.name}': {exc}",
+                "frame_count": 0,
+                "frames": [],
+                "summary": {"status": "CORRUPT_FRAME", "issues_count": 1},
+            }
+
+        if expected_shape is None:
+            expected_shape = (arr.shape[0], arr.shape[1])
+        elif (arr.shape[0], arr.shape[1]) != expected_shape:
+            th, tw = expected_shape
+            norm = np.zeros((th, tw, 4), dtype=float)
+            ch = min(th, arr.shape[0])
+            cw = min(tw, arr.shape[1])
+            norm[:ch, :cw] = arr[:ch, :cw]
+            arr = norm
+
+        tr = transforms.get(str(idx), {})
+        try:
+            dx = int(round(float(tr.get("dx", 0)))) if isinstance(tr, dict) else 0
+            dy = int(round(float(tr.get("dy", 0)))) if isinstance(tr, dict) else 0
+        except (TypeError, ValueError, OverflowError):
+            dx, dy = 0, 0
+        if dx != 0 or dy != 0:
+            shifted = np.zeros_like(arr)
+            h, w = arr.shape[:2]
+            src_x0 = max(0, -dx)
+            src_x1 = min(w, w - dx)
+            dst_x0 = max(0, dx)
+            dst_x1 = min(w, w + dx)
+            src_y0 = max(0, -dy)
+            src_y1 = min(h, h - dy)
+            dst_y0 = max(0, dy)
+            dst_y1 = min(h, h + dy)
+            if src_x1 > src_x0 and src_y1 > src_y0:
+                shifted[dst_y0:dst_y1, dst_x0:dst_x1] = arr[src_y0:src_y1, src_x0:src_x1]
+            arr = shifted
+        raw_arrays[idx] = arr
 
     ref_idx = active_indices[0]
     ref_arr = raw_arrays[ref_idx]
@@ -267,8 +314,10 @@ def analyze_run_directory(run_dir: str | Path) -> dict[str, Any]:
     if curation_path.exists():
         try:
             cdata = json.loads(curation_path.read_text(encoding="utf-8"))
-            curation_states = cdata.get("states", {})
+            curation_states = cdata.get("states", {}) if isinstance(cdata, dict) else {}
         except Exception:
+            curation_states = {}
+        if not isinstance(curation_states, dict):
             curation_states = {}
 
     states_report: dict[str, Any] = {}
@@ -276,11 +325,19 @@ def analyze_run_directory(run_dir: str | Path) -> dict[str, Any]:
         if sdir.is_dir() and not sdir.name.startswith("_"):
             sname = sdir.name
             scur = curation_states.get(sname, {})
+            if not isinstance(scur, dict):
+                scur = {}
+            transforms = scur.get("transforms")
+            selected = scur.get("selected")
+            if not isinstance(transforms, dict):
+                transforms = None
+            if not (isinstance(selected, list) and all(isinstance(i, int) for i in selected)):
+                selected = None
             states_report[sname] = analyze_state_frames(
                 sdir,
                 state_name=sname,
-                transforms=scur.get("transforms"),
-                selected_indices=scur.get("selected"),
+                transforms=transforms,
+                selected_indices=selected,
             )
 
     return {
