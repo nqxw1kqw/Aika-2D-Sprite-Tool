@@ -255,21 +255,25 @@ class StagePlayer {
         }
 
         // HUD overlay top-left of canvas
-        ctx.fillStyle = "rgba(15, 18, 28, 0.78)";
-        ctx.fillRect(10, 10, 235, 44);
-        ctx.fillStyle = "#f9a8d4";
-        ctx.font = "bold 11.5px sans-serif";
+        ctx.fillStyle = "rgba(13, 17, 23, 0.85)";
+        ctx.fillRect(10, 10, 245, 46);
+        ctx.strokeStyle = "rgba(48, 54, 61, 0.8)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(10, 10, 245, 46);
+
+        ctx.fillStyle = "#58a6ff";
+        ctx.font = "600 11.5px 'Be Vietnam Pro', 'Inter', sans-serif";
         ctx.fillText(
           `State: ${this.currentState}  |  Frame: ${this.frameIdx + 1}/${st.frames.length}`,
           18,
           27
         );
-        ctx.fillStyle = "#9ca3af";
-        ctx.font = "11px monospace";
+        ctx.fillStyle = "#8b949e";
+        ctx.font = "11px 'JetBrains Mono', monospace";
         ctx.fillText(
           `Cell: ${f.w}x${f.h}px  |  ${this.forwardMode ? "Forward Loop" : "In-Place"}`,
           18,
-          44
+          45
         );
       }
     }

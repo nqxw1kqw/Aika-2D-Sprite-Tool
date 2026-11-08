@@ -22,8 +22,11 @@ from app.core.frame_analyzer import analyze_state_frames, list_frame_files
 
 def _compute_state_revision(rdir: Path, state_name: str) -> str:
     """Return sprite-gen's state revision when available, or a deterministic SHA-256 fallback."""
-    if sg_curation is not None:
-        return sg_curation.state_revision(rdir, state_name)
+    if sg_curation is not None and (rdir / "sprite-request.json").is_file():
+        try:
+            return sg_curation.state_revision(rdir, state_name)
+        except (Exception, SystemExit):
+            pass
     h = hashlib.sha256()
     sdir = rdir / "frames" / state_name
     for fp in list_frame_files(sdir):
@@ -35,8 +38,11 @@ def _compute_state_revision(rdir: Path, state_name: str) -> str:
 
 def _compute_run_revision(rdir: Path) -> str:
     """Return sprite-gen's run revision when available, or a deterministic SHA-256 fallback."""
-    if sg_curation is not None:
-        return sg_curation.run_revision(rdir)
+    if sg_curation is not None and (rdir / "sprite-request.json").is_file():
+        try:
+            return sg_curation.run_revision(rdir)
+        except (Exception, SystemExit):
+            pass
     h = hashlib.sha256()
     frames_root = rdir / "frames"
     if frames_root.is_dir():

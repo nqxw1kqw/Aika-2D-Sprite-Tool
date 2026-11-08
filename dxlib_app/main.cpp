@@ -253,6 +253,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     SetDragFileValidFlag(TRUE);
     SetMainWindowText("Aika 2D Sprite Auto-Run Studio v2.0 [DxLib C++ Desktop Edition]");
 
+    SetUseCharCodeFormat(DX_CHARCODEFORMAT_UTF8);
     if (DxLib_Init() == -1) return -1;
     SetDrawScreen(DX_SCREEN_BACK);
     HWND hwnd = GetMainWindowHandle();
@@ -261,10 +262,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     SetForegroundWindow(hwnd);
     SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
 
-    int fontTitle = CreateFontToHandle("Segoe UI", 18, 7, DX_FONTTYPE_ANTIALIASING_4X4);
-    int fontTab   = CreateFontToHandle("Segoe UI", 14, 6, DX_FONTTYPE_ANTIALIASING_4X4);
-    int fontBold  = CreateFontToHandle("Segoe UI", 14, 6, DX_FONTTYPE_ANTIALIASING_4X4);
-    int fontSmall = CreateFontToHandle("Consolas", 12, 4, DX_FONTTYPE_ANTIALIASING_4X4);
+    int fontTitle = CreateFontToHandle("Segoe UI", 18, 7, DX_FONTTYPE_ANTIALIASING_4X4, DX_CHARSET_UTF8);
+    int fontTab   = CreateFontToHandle("Segoe UI", 14, 6, DX_FONTTYPE_ANTIALIASING_4X4, DX_CHARSET_UTF8);
+    int fontBold  = CreateFontToHandle("Segoe UI", 14, 6, DX_FONTTYPE_ANTIALIASING_4X4, DX_CHARSET_UTF8);
+    int fontSmall = CreateFontToHandle("Segoe UI", 12, 4, DX_FONTTYPE_ANTIALIASING_4X4, DX_CHARSET_UTF8);
 
     if (GetFileAttributesA("dxlib_meta.txt") == INVALID_FILE_ATTRIBUTES) {
         system("\".venv\\bin\\python.exe\" app\\dxlib_cli_bridge.py sync --run codex_run");
@@ -288,18 +289,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     int prevSpace = 0;
     int prevJ = 0;
 
-    unsigned int colBg      = GetColor(14, 16, 23);
-    unsigned int colPanel   = GetColor(22, 25, 37);
-    unsigned int colCard    = GetColor(31, 36, 54);
-    unsigned int colBorder  = GetColor(46, 53, 80);
-    unsigned int colPink    = GetColor(236, 72, 153);
-    unsigned int colViolet  = GetColor(139, 92, 246);
-    unsigned int colGreen   = GetColor(16, 185, 129);
-    unsigned int colAmber   = GetColor(245, 158, 11);
-    unsigned int colRed     = GetColor(239, 68, 68);
-    unsigned int colWhite   = GetColor(243, 244, 246);
-    unsigned int colMuted   = GetColor(156, 163, 175);
-    unsigned int colCyan    = GetColor(6, 182, 212);
+    unsigned int colBg      = GetColor(13, 17, 23);    // Neutral dark slate #0d1117
+    unsigned int colPanel   = GetColor(22, 27, 34);    // Slate panel #161b22
+    unsigned int colCard    = GetColor(33, 38, 45);    // Card #21262d
+    unsigned int colBorder  = GetColor(48, 54, 61);    // Subtle slate border #30363d
+    unsigned int colPrimary = GetColor(31, 111, 235);  // Professional clean blue #1f6feb
+    unsigned int colAccent  = GetColor(88, 166, 255);  // Accent cyan-blue #58a6ff
+    unsigned int colGreen   = GetColor(46, 160, 67);   // Soft emerald #2ea043
+    unsigned int colAmber   = GetColor(210, 153, 34);  // Muted amber #d29922
+    unsigned int colRed     = GetColor(248, 81, 73);   // Soft red #f85149
+    unsigned int colWhite   = GetColor(240, 246, 252); // Soft crisp white #f0f6fc
+    unsigned int colMuted   = GetColor(139, 148, 158); // Muted text #8b949e
+    unsigned int colCyan    = GetColor(56, 189, 248);  // Cyan #38bdf8
+    unsigned int colPink    = colAccent;               // Modern soft blue (removes gaudy pink)
+    unsigned int colViolet  = colPrimary;              // Crisp studio blue
 
     while (ProcessMessage() == 0 && CheckHitKey(KEY_INPUT_ESCAPE) == 0) {
         if (g_needsReload.exchange(false)) {
@@ -314,8 +317,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                 DragFileInfoClear();
                 runPythonBridgeAsync(
                     std::string("drop --file \"") + droppedPath + "\"",
-                    std::string("Dang tu dong phan tich & nhap anh: ") + droppedPath,
-                    "Anh moi da duoc nap thanh cong vao Studio!"
+                    std::string("Đang tự động phân tích & nạp ảnh: ") + droppedPath,
+                    "Ảnh mới đã được nạp thành công vào Studio!"
                 );
             }
         }
@@ -332,20 +335,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         std::vector<ButtonRect> buttons;
 
         // 1. TOP HEADER BAR WITH MENU HUB TABS
-        drawRoundedPanel(0, 0, 1280, 52, GetColor(18, 21, 32), colBorder);
-        DrawStringToHandle(14, 14, "AIKA 2D SPRITE STUDIO", colPink, fontTitle);
+        drawRoundedPanel(0, 0, 1280, 52, GetColor(18, 22, 30), colBorder);
+        DrawStringToHandle(16, 14, "AIKA 2D SPRITE STUDIO", colAccent, fontTitle);
 
         // 4 Main Navigation Tabs
         struct TabDef { int id; std::string label; int x, w; };
         std::vector<TabDef> tabs = {
-            { 0, "1. SAN KHAU & FRAME", 280, 190 },
-            { 1, "2. QUAN LY & NAP ANH", 480, 190 },
-            { 2, "3. ON DINH & THO",    680, 180 },
-            { 3, "4. XUAT CODE & ENGINE", 870, 190 },
+            { 0, "1. SÂN KHẤU & FRAME", 280, 190 },
+            { 1, "2. QUẢN LÝ & NẠP ẢNH", 480, 190 },
+            { 2, "3. ỔN ĐỊNH & THỞ",    680, 180 },
+            { 3, "4. XUẤT CODE & ENGINE", 870, 190 },
         };
         for (const auto& t : tabs) {
             bool isActive = (g_activeTab == t.id);
-            unsigned int tabBg = isActive ? colPink : colCard;
+            unsigned int tabBg = isActive ? colPrimary : colCard;
             unsigned int tabText = isActive ? colWhite : colMuted;
             buttons.push_back({ t.x, 8, t.w, 36, t.label, "tab_" + std::to_string(t.id), tabBg, tabText, isActive });
         }
@@ -357,51 +360,51 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         if (g_activeTab == 0) {
             // Left Quick Panel
             drawRoundedPanel(12, 60, 276, 648, colPanel, colBorder);
-            DrawStringToHandle(22, 70, "DIEU KHIEN CHUYEN DONG", colPink, fontBold);
+            DrawStringToHandle(22, 70, "ĐIỀU KHIỂN CHUYỂN ĐỘNG", colAccent, fontBold);
             DrawFormatStringToHandle(22, 94, colWhite, fontSmall, "Run: %s", g_activeRun.c_str());
             DrawFormatStringToHandle(22, 112, colMuted, fontSmall, "Input: %s", g_activeInput.c_str());
 
-            buttons.push_back({ 22, 134, 256, 32, "Chon anh tu may...", "quick_browse", colCyan, colWhite });
-            buttons.push_back({ 22, 172, 256, 34, "Doi Run (codex / unpacked)", "switch_run", colCard, colWhite });
-            buttons.push_back({ 22, 212, 256, 36, "⚡ 1-Click Auto-Stabilize", "stabilize", colViolet, colWhite });
-            buttons.push_back({ 22, 254, 256, 34, "Khoi phuc goc (Reset)", "reset", colCard, colWhite });
+            buttons.push_back({ 22, 134, 256, 32, "Chọn ảnh từ máy...", "quick_browse", colCard, colWhite });
+            buttons.push_back({ 22, 172, 256, 34, "Đổi Run (codex / unpacked)", "switch_run", colCard, colWhite });
+            buttons.push_back({ 22, 212, 256, 36, "⚡ 1-Click Auto-Stabilize", "stabilize", colPrimary, colWhite });
+            buttons.push_back({ 22, 254, 256, 34, "Khôi phục gốc (Reset)", "reset", colCard, colWhite });
 
-            DrawStringToHandle(22, 302, "TOC DO & TRANG THAI", colPink, fontBold);
+            DrawStringToHandle(22, 302, "TỐC ĐỘ & TRẠNG THÁI", colAccent, fontBold);
             const StateData& curSt = g_states[g_currentState];
             DrawFormatStringToHandle(22, 326, colWhite, fontSmall, "State: %s (FPS: %.1f)", g_currentState.c_str(), curSt.fps);
             buttons.push_back({ 22, 346, 124, 28, "FPS -1", "fps_dec", colCard, colWhite });
             buttons.push_back({ 154, 346, 124, 28, "FPS +1", "fps_inc", colCard, colWhite });
 
-            DrawStringToHandle(22, 388, "PHIM TAT TRONG SAN KHAU", colPink, fontBold);
-            DrawStringToHandle(22, 410, "A / D : Chay qua lai & Lat mat", colMuted, fontSmall);
-            DrawStringToHandle(22, 428, "SPACE : Nhay len cao", colMuted, fontSmall);
-            DrawStringToHandle(22, 446, "J     : Ban tim hong", colMuted, fontSmall);
-            DrawStringToHandle(22, 464, "ESC   : Thoat Studio", colMuted, fontSmall);
+            DrawStringToHandle(22, 388, "PHÍM TẮT TRONG SÂN KHẤU", colAccent, fontBold);
+            DrawStringToHandle(22, 410, "A / D : Chạy qua lại & Lật mặt", colMuted, fontSmall);
+            DrawStringToHandle(22, 428, "SPACE : Nhảy lên cao", colMuted, fontSmall);
+            DrawStringToHandle(22, 446, "J     : Bắn tim hiệu ứng", colMuted, fontSmall);
+            DrawStringToHandle(22, 464, "ESC   : Thoát Studio", colMuted, fontSmall);
 
             // Drag & Drop box
-            drawRoundedPanel(22, 494, 256, 202, GetColor(18, 20, 30), colPink);
-            DrawStringToHandle(36, 510, "KEO THA ANH VAO DAY", colPink, fontBold);
-            DrawStringToHandle(30, 536, "- Tha Sprite Sheet: Tu dong cat", colMuted, fontSmall);
-            DrawStringToHandle(30, 554, "- Tha 1 Anh tinh: Goi AI tao bo", colMuted, fontSmall);
-            DrawStringToHandle(30, 572, "- Ho tro: PNG, JPG, WEBP", colMuted, fontSmall);
-            buttons.push_back({ 36, 600, 228, 36, "🚀 Xuat C++ DxLib / Web / Unity", "export_code", colGreen, colWhite });
-            buttons.push_back({ 36, 646, 228, 34, "🌐 Mo Web Studio (8780)", "open_web", colCard, colWhite });
+            drawRoundedPanel(22, 494, 256, 202, GetColor(16, 20, 28), colBorder);
+            DrawStringToHandle(36, 510, "KÉO THẢ ẢNH VÀO ĐÂY", colAccent, fontBold);
+            DrawStringToHandle(30, 536, "- Thả Sprite Sheet: Tự động cắt", colMuted, fontSmall);
+            DrawStringToHandle(30, 554, "- Thả 1 Ảnh tĩnh: Gọi AI tạo bộ", colMuted, fontSmall);
+            DrawStringToHandle(30, 572, "- Hỗ trợ: PNG, JPG, WEBP", colMuted, fontSmall);
+            buttons.push_back({ 36, 600, 228, 36, "🚀 Xuất C++ DxLib / Web / Unity", "export_code", colGreen, colWhite });
+            buttons.push_back({ 36, 646, 228, 34, "🌐 Mở Web Studio (8780)", "open_web", colCard, colWhite });
 
             // Center Top: Stage (976 x 388)
             int stX = 296, stY = 60, stW = 972, stH = 390;
-            drawRoundedPanel(stX, stY, stW, stH, GetColor(16, 18, 28), colBorder);
+            drawRoundedPanel(stX, stY, stW, stH, GetColor(13, 17, 23), colBorder);
 
             // Stage Toolbar
             int tx = stX + 10;
             for (const auto& sname : g_stateOrder) {
                 bool isCur = (sname == g_currentState);
-                buttons.push_back({ tx, stY + 8, 86, 28, sname, "state_" + sname, isCur ? colPink : colCard, colWhite, isCur });
+                buttons.push_back({ tx, stY + 8, 86, 28, sname, "state_" + sname, isCur ? colPrimary : colCard, colWhite, isCur });
                 tx += 92;
             }
-            buttons.push_back({ stX + 410, stY + 8, 170, 28, forwardLoop ? "Mode: Auto-Run Cuon" : "Mode: Loop Tai Cho", "toggle_forward", forwardLoop ? colPink : colCard, colWhite });
-            buttons.push_back({ stX + 588, stY + 8, 145, 28, pixelMode ? "Filter: Pixel Sac Net" : "Filter: Smooth HD", "toggle_pixel", pixelMode ? colViolet : colCard, colWhite });
+            buttons.push_back({ stX + 410, stY + 8, 170, 28, forwardLoop ? "Mode: Auto-Run Cuộn" : "Mode: Loop Tại Chỗ", "toggle_forward", forwardLoop ? colPrimary : colCard, colWhite });
+            buttons.push_back({ stX + 588, stY + 8, 145, 28, pixelMode ? "Lọc: Pixel Sắc Nét" : "Lọc: Smooth HD", "toggle_pixel", pixelMode ? colAccent : colCard, colWhite });
             buttons.push_back({ stX + 740, stY + 8, 95, 28, "Zoom: " + std::to_string(zoom) + "x", "toggle_zoom", colCard, colWhite });
-            buttons.push_back({ stX + 842, stY + 8, 118, 28, showGuides ? "Can truc: BAT" : "Can truc: TAT", "toggle_guides", showGuides ? colGreen : colCard, colWhite });
+            buttons.push_back({ stX + 842, stY + 8, 118, 28, showGuides ? "Căn trục: BẬT" : "Căn trục: TẮT", "toggle_guides", showGuides ? colGreen : colCard, colWhite });
 
             // Animation timing & Input handling
             std::vector<int> activeIndices;
@@ -500,7 +503,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
             drawRoundedPanel(anX, anY, anW, anH, colPanel, colBorder);
             unsigned int sumCol = (curSt.status == "NORMAL") ? colGreen : colRed;
             DrawFormatStringToHandle(anX + 14, anY + 10, sumCol, fontBold,
-                "BANG PHAN TICH CHUAN HOA [%s] -> Trang thai: %s (Lech dau: %d, Khung khung <5%%: %d, Nhay goc >35%%: %d)",
+                "BẢNG PHÂN TÍCH CHUẨN HÓA [%s] -> Trạng thái: %s (Lệch đầu: %d, Khựng <5%%: %d, Nhảy vọt >35%%: %d)",
                 g_currentState.c_str(), curSt.status.c_str(), curSt.headDriftCount, curSt.stalledCount, curSt.jumpCutCount);
 
             int cardW = 114, cardGap = 6, startX = anX + 12, cardY = anY + 36, cardH = 202;
@@ -517,20 +520,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
                 if (g_atlasHandle != -1) {
                     int thumbH = DerivationGraph(fi.rx, fi.ry, fi.rw, fi.rh, g_atlasHandle);
-                    DrawBox(cx + 8, cardY + 24, cx + cardW - 8, cardY + 102, GetColor(18, 20, 30), TRUE);
+                    DrawBox(cx + 8, cardY + 24, cx + cardW - 8, cardY + 102, GetColor(16, 20, 28), TRUE);
                     SetDrawMode(pixelMode ? DX_DRAWMODE_NEAREST : DX_DRAWMODE_BILINEAR);
                     DrawExtendGraph(cx + 18, cardY + 26, cx + cardW - 18, cardY + 100, thumbH, TRUE);
                     DeleteGraph(thumbH);
                 }
 
-                DrawFormatStringToHandle(cx + 6, cardY + 106, (fi.headStatus == "OK") ? colGreen : colRed, fontSmall, "Head: %.1f%%", fi.headPct);
-                DrawFormatStringToHandle(cx + 6, cardY + 124, (fi.legStatus == "NORMAL") ? colGreen : colAmber, fontSmall, "Leg: %.1f%%", fi.rLegPct);
+                DrawFormatStringToHandle(cx + 6, cardY + 106, (fi.headStatus == "OK") ? colGreen : colRed, fontSmall, "Đầu: %.1f%%", fi.headPct);
+                DrawFormatStringToHandle(cx + 6, cardY + 124, (fi.legStatus == "NORMAL") ? colGreen : colAmber, fontSmall, "Chân: %.1f%%", fi.rLegPct);
                 DrawFormatStringToHandle(cx + 6, cardY + 142, colMuted, fontSmall, "%s", fi.legStatus.c_str());
 
                 std::string prefix = "f_" + std::to_string(fi.index) + "_";
-                buttons.push_back({ cx + 6, cardY + 164, 30, 24, "<x", prefix + "dx_neg", GetColor(45, 52, 75), colWhite });
-                buttons.push_back({ cx + 40, cardY + 164, 30, 24, "x>", prefix + "dx_pos", GetColor(45, 52, 75), colWhite });
-                buttons.push_back({ cx + 74, cardY + 164, 34, 24, fi.selected ? "ON" : "OFF", prefix + "tog", fi.selected ? colGreen : colRed, colWhite });
+                buttons.push_back({ cx + 6, cardY + 164, 30, 24, "<x", prefix + "dx_neg", GetColor(40, 46, 56), colWhite });
+                buttons.push_back({ cx + 40, cardY + 164, 30, 24, "x>", prefix + "dx_pos", GetColor(40, 46, 56), colWhite });
+                buttons.push_back({ cx + 74, cardY + 164, 34, 24, fi.selected ? "BẬT" : "TẮT", prefix + "tog", fi.selected ? colGreen : colRed, colWhite });
             }
         }
 
@@ -538,170 +541,170 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         else if (g_activeTab == 1) {
             // Left Column: Inputs List & File Dialog (420px)
             drawRoundedPanel(12, 60, 420, 648, colPanel, colBorder);
-            DrawStringToHandle(24, 72, "DANH SACH ANH VAO (INPUTS)", colPink, fontBold);
-            buttons.push_back({ 24, 98, 396, 42, "📂 DUYET FILE ANH TU MAY TINH (PNG/JPG)...", "dlg_import", colPink, colWhite });
+            DrawStringToHandle(24, 72, "DANH SÁCH ẢNH VÀO (INPUTS)", colAccent, fontBold);
+            buttons.push_back({ 24, 98, 396, 42, "📂 DUYỆT FILE ẢNH TỪ MÁY TÍNH (PNG/JPG)...", "dlg_import", colPrimary, colWhite });
 
-            DrawStringToHandle(24, 154, "Chon anh trong thu muc inputs/:", colWhite, fontSmall);
+            DrawStringToHandle(24, 154, "Chọn ảnh trong thư mục inputs/:", colWhite, fontSmall);
             int inY = 176;
             for (const auto& inp : g_availableInputs) {
                 bool isAct = (inp == g_activeInput);
-                buttons.push_back({ 24, inY, 396, 32, (isAct ? "> " : "  ") + inp, "sel_inp_" + inp, isAct ? colViolet : colCard, colWhite, isAct });
+                buttons.push_back({ 24, inY, 396, 32, (isAct ? "> " : "  ") + inp, "sel_inp_" + inp, isAct ? colPrimary : colCard, colWhite, isAct });
                 inY += 38;
             }
 
             // Drag Drop area
-            drawRoundedPanel(24, 460, 396, 236, GetColor(18, 20, 30), colPink);
-            DrawStringToHandle(36, 478, "HOAC KEO THA FILE VAO DAY", colPink, fontBold);
-            DrawStringToHandle(36, 510, "- Keo truc tiep tu Windows Explorer vao cua so nay", colMuted, fontSmall);
-            DrawStringToHandle(36, 530, "- He thong se tu copy vao inputs/ va kiem dinh", colMuted, fontSmall);
-            DrawStringToHandle(36, 550, "- Ho tro: PNG (Alpha), JPG (Reference Sheet), WEBP", colMuted, fontSmall);
-            DrawStringToHandle(36, 580, "Trang thai hien tai:", colWhite, fontSmall);
+            drawRoundedPanel(24, 460, 396, 236, GetColor(16, 20, 28), colBorder);
+            DrawStringToHandle(36, 478, "HOẶC KÉO THẢ FILE VÀO ĐÂY", colAccent, fontBold);
+            DrawStringToHandle(36, 510, "- Kéo trực tiếp từ Windows Explorer vào cửa sổ này", colMuted, fontSmall);
+            DrawStringToHandle(36, 530, "- Hệ thống sẽ tự copy vào inputs/ và kiểm định", colMuted, fontSmall);
+            DrawStringToHandle(36, 550, "- Hỗ trợ: PNG (Alpha), JPG (Reference Sheet), WEBP", colMuted, fontSmall);
+            DrawStringToHandle(36, 580, "Trạng thái hiện tại:", colWhite, fontSmall);
             DrawFormatStringToHandle(36, 602, colGreen, fontSmall, "Active Input: %s", g_activeInput.c_str());
             DrawFormatStringToHandle(36, 622, colCyan, fontSmall, "File path: %s", g_inputPath.c_str());
 
             // Right Column: Auto-Detector Inspection & Actions (832px)
             int rX = 444, rY = 60, rW = 824, rH = 648;
             drawRoundedPanel(rX, rY, rW, rH, colPanel, colBorder);
-            DrawStringToHandle(rX + 18, rY + 14, "KET QUA KIEM DINH ANH (AUTO-DETECTOR REPORT)", colPink, fontBold);
+            DrawStringToHandle(rX + 18, rY + 14, "KẾT QUẢ KIỂM ĐỊNH ẢNH (AUTO-DETECTOR REPORT)", colAccent, fontBold);
 
             // Preview Thumbnail Box
-            drawRoundedPanel(rX + 18, rY + 44, 260, 260, GetColor(16, 18, 28), colBorder);
+            drawRoundedPanel(rX + 18, rY + 44, 260, 260, GetColor(13, 17, 23), colBorder);
             if (g_inputThumbHandle != -1) {
                 DrawExtendGraph(rX + 22, rY + 48, rX + 274, rY + 300, g_inputThumbHandle, TRUE);
             } else {
-                DrawStringToHandle(rX + 60, rY + 160, "[ Khong co anh xem truoc ]", colMuted, fontSmall);
+                DrawStringToHandle(rX + 60, rY + 160, "[ Không có ảnh xem trước ]", colMuted, fontSmall);
             }
 
             // Detector Properties
             int infoX = rX + 296, infoY = rY + 48;
-            DrawFormatStringToHandle(infoX, infoY, colWhite, fontBold, "Ten file: %s", g_activeInput.c_str());
-            DrawFormatStringToHandle(infoX, infoY + 28, colCyan, fontSmall, "Phan loai: %s (%s)",
+            DrawFormatStringToHandle(infoX, infoY, colWhite, fontBold, "Tên file: %s", g_activeInput.c_str());
+            DrawFormatStringToHandle(infoX, infoY + 28, colCyan, fontSmall, "Phân loại: %s (%s)",
                 g_detector.kind.c_str(),
-                (g_detector.kind == "sprite_sheet") ? "Sprite Sheet nhieu frame" : "Anh tinh 1 nhan vat");
-            DrawFormatStringToHandle(infoX, infoY + 50, colWhite, fontSmall, "Kich thuoc: %d x %d px", g_detector.width, g_detector.height);
-            DrawFormatStringToHandle(infoX, infoY + 72, colWhite, fontSmall, "Uoc tinh grid: %d hang x %d cot", g_detector.rows, g_detector.cols);
+                (g_detector.kind == "sprite_sheet") ? "Sprite Sheet nhiều frame" : "Ảnh tĩnh 1 nhân vật");
+            DrawFormatStringToHandle(infoX, infoY + 50, colWhite, fontSmall, "Kích thước: %d x %d px", g_detector.width, g_detector.height);
+            DrawFormatStringToHandle(infoX, infoY + 72, colWhite, fontSmall, "Ước tính grid: %d hàng x %d cột", g_detector.rows, g_detector.cols);
             DrawFormatStringToHandle(infoX, infoY + 94, g_detector.hasAlpha ? colGreen : colRed, fontSmall,
-                "Kenh Alpha trong suot: %s", g_detector.hasAlpha ? "CO (Tach san)" : "KHONG (Nen dac - OPAQUE_WALL)");
-            DrawFormatStringToHandle(infoX, infoY + 116, colAmber, fontSmall, "Chroma key de xuat: %s", g_detector.chromaKey.c_str());
+                "Kênh Alpha trong suốt: %s", g_detector.hasAlpha ? "CÓ (Tách sẵn)" : "KHÔNG (Nền đặc - OPAQUE_WALL)");
+            DrawFormatStringToHandle(infoX, infoY + 116, colAmber, fontSmall, "Chroma key đề xuất: %s", g_detector.chromaKey.c_str());
             DrawFormatStringToHandle(infoX, infoY + 138, (g_detector.errorCode == "NONE") ? colGreen : colRed, fontSmall,
-                "Ma loi: %s", g_detector.errorCode.c_str());
+                "Mã lỗi: %s", g_detector.errorCode.c_str());
 
-            drawRoundedPanel(infoX, infoY + 166, 506, 90, GetColor(18, 21, 32), colBorder);
-            DrawStringToHandle(infoX + 12, infoY + 176, "Giai thich & Khuyen nghi:", colPink, fontBold);
+            drawRoundedPanel(infoX, infoY + 166, 506, 90, GetColor(18, 22, 30), colBorder);
+            DrawStringToHandle(infoX + 12, infoY + 176, "Giải thích & Khuyến nghị:", colAccent, fontBold);
             DrawStringToHandle(infoX + 12, infoY + 200, g_detector.message.c_str(), colWhite, fontSmall);
 
             // Action Buttons
-            DrawStringToHandle(rX + 18, rY + 320, "CAC HANH DONG XU LY ANH CO THE THUC HIEN:", colPink, fontBold);
+            DrawStringToHandle(rX + 18, rY + 320, "CÁC HÀNH ĐỘNG XỬ LÝ ẢNH CÓ THỂ THỰC HIỆN:", colAccent, fontBold);
 
             // Button 1: 1-Click Cutout if opaque
-            unsigned int cutoutCol = (!g_detector.hasAlpha) ? colPink : colCard;
-            buttons.push_back({ rX + 18, rY + 348, 788, 44, "⚡ 1-Click Tach Nen Trong Suot (Auto Cutout Nen Dac)", "act_cutout", cutoutCol, colWhite });
+            unsigned int cutoutCol = (!g_detector.hasAlpha) ? colPrimary : colCard;
+            buttons.push_back({ rX + 18, rY + 348, 788, 44, "⚡ 1-Click Tách Nền Trong Suốt (Auto Cutout Nền Đặc)", "act_cutout", cutoutCol, colWhite });
 
             // Button 2: Smart Auto-Detect & Slice
-            buttons.push_back({ rX + 18, rY + 400, 788, 44, "✂️ Cat Tu Dong Sprite Sheet (Auto-Slice 2s vao Runs)", "act_slice", colGreen, colWhite });
+            buttons.push_back({ rX + 18, rY + 400, 788, 44, "✂️ Cắt Tự Động Sprite Sheet (Auto-Slice 2s vào Runs)", "act_slice", colGreen, colWhite });
 
             // Button 3: Seamless Background
-            buttons.push_back({ rX + 18, rY + 452, 788, 44, "🗺️ Tao San Cuon Vo Tan (Make Seamless Horizontal Tile)", "act_seamless", colCyan, colWhite });
+            buttons.push_back({ rX + 18, rY + 452, 788, 44, "🗺️ Tạo Sàn Cuộn Vô Tận (Make Seamless Horizontal Tile)", "act_seamless", colCyan, colWhite });
 
             // Button 4: AI Sprite pipeline
-            buttons.push_back({ rX + 18, rY + 504, 788, 44, "🤖 Dung Anh Nay Lam Mau De AI Ve Sprite (Codex CLI Pipeline)", "act_ai_regen", colViolet, colWhite });
+            buttons.push_back({ rX + 18, rY + 504, 788, 44, "🤖 Dùng Ảnh Này Làm Mẫu Để AI Vẽ Sprite (Codex CLI Pipeline)", "act_ai_regen", colCard, colWhite });
 
             // Button 5: Back to Stage
-            buttons.push_back({ rX + 18, rY + 576, 788, 42, "▶ Quay Lai San Khau & Kiem Tra Frame Ngay", "goto_stage", colCard, colWhite });
+            buttons.push_back({ rX + 18, rY + 576, 788, 42, "▶ Quay Lại Sân Khấu & Kiểm Tra Frame Ngay", "goto_stage", colCard, colWhite });
         }
 
         // TAB 2: STABILIZER & CURATION HUB
         else if (g_activeTab == 2) {
             drawRoundedPanel(12, 60, 1256, 648, colPanel, colBorder);
-            DrawStringToHandle(24, 74, "BO DIEU CHINH ON DINH CHUYEN DONG & HIEN THI (AUTO-STABILIZER HUB)", colPink, fontTitle);
-            DrawStringToHandle(24, 106, "Tu dong triet tieu rung dau (Head Drift), loai bo khung hinh bi khung (Stalled), va tao lop tho (Idle Breathe).", colMuted, fontSmall);
+            DrawStringToHandle(24, 74, "BỘ ĐIỀU CHỈNH ỔN ĐỊNH CHUYỂN ĐỘNG & HIỂN THỊ (AUTO-STABILIZER HUB)", colAccent, fontTitle);
+            DrawStringToHandle(24, 106, "Tự động triệt tiêu rung đầu (Head Drift), loại bỏ khung hình bị khựng (Stalled), và tạo lớp thở (Idle Breathe).", colMuted, fontSmall);
 
             // 3 Action Cards
             int cW = 394, cH = 320, cY = 138;
 
             // Card 1: 1-Click Stabilize
-            drawRoundedPanel(24, cY, cW, cH, colCard, colViolet);
-            DrawStringToHandle(38, cY + 16, "1. 1-CLICK AUTO-STABILIZE", colViolet, fontBold);
-            DrawStringToHandle(38, cY + 44, "- Can chinh toa do (dx, dy) tung frame", colWhite, fontSmall);
-            DrawStringToHandle(38, cY + 64, "- Khoa truc dau head_dx khong bi rung lac", colWhite, fontSmall);
-            DrawStringToHandle(38, cY + 84, "- Tu dong loai bo frame R_leg < 5% (dung yen)", colWhite, fontSmall);
-            DrawStringToHandle(38, cY + 104, "- Bao toan it nhat 3 frame cho moi chu ky", colWhite, fontSmall);
-            DrawStringToHandle(38, cY + 124, "- Cap nhat curation.json va ghep lai atlas", colWhite, fontSmall);
-            buttons.push_back({ 38, cY + 180, cW - 28, 42, "⚡ Chay 1-Click Stabilize Ngay", "act_stabilize_run", colViolet, colWhite });
-            buttons.push_back({ 38, cY + 232, cW - 28, 38, "↺ Khoi Phuc Curation Goc (Reset)", "reset", colCard, colWhite });
+            drawRoundedPanel(24, cY, cW, cH, colCard, colPrimary);
+            DrawStringToHandle(38, cY + 16, "1. 1-CLICK AUTO-STABILIZE", colAccent, fontBold);
+            DrawStringToHandle(38, cY + 44, "- Căn chỉnh tọa độ (dx, dy) từng frame", colWhite, fontSmall);
+            DrawStringToHandle(38, cY + 64, "- Khóa trục đầu head_dx không bị rung lắc", colWhite, fontSmall);
+            DrawStringToHandle(38, cY + 84, "- Tự động loại bỏ frame R_leg < 5% (đứng yên)", colWhite, fontSmall);
+            DrawStringToHandle(38, cY + 104, "- Bảo toàn ít nhất 3 frame cho mỗi chu kỳ", colWhite, fontSmall);
+            DrawStringToHandle(38, cY + 124, "- Cập nhật curation.json và ghép lại atlas", colWhite, fontSmall);
+            buttons.push_back({ 38, cY + 180, cW - 28, 42, "⚡ Chạy 1-Click Stabilize Ngay", "act_stabilize_run", colPrimary, colWhite });
+            buttons.push_back({ 38, cY + 232, cW - 28, 38, "↺ Khôi Phục Curation Gốc (Reset)", "reset", colCard, colWhite });
 
             // Card 2: Idle Breathe
-            drawRoundedPanel(440, cY, cW, cH, colCard, colPink);
-            DrawStringToHandle(454, cY + 16, "2. LOP THO TU NHIEN (IDLE BREATHE)", colPink, fontBold);
-            DrawStringToHandle(454, cY + 44, "- Tao nhip tho phong / xep nhe cho nhan vat", colWhite, fontSmall);
-            DrawStringToHandle(454, cY + 64, "- Che do Smooth: Bien dang nhe nhe muot ma", colWhite, fontSmall);
-            DrawStringToHandle(454, cY + 84, "- Che do Pixel: Giu chat luong pixel art goc", colWhite, fontSmall);
-            DrawFormatStringToHandle(454, cY + 114, colCyan, fontSmall, "Che do hien tai: %s", g_breatheMode.c_str());
-            buttons.push_back({ 454, cY + 180, cW - 28, 42, "🌬️ Bat Tho Kieu Smooth", "breathe_smooth", (g_breatheMode == "smooth") ? colPink : colCard, colWhite });
-            buttons.push_back({ 454, cY + 232, cW - 28, 38, "👾 Bat Tho Kieu Pixel Art", "breathe_pixel", (g_breatheMode == "pixel") ? colPink : colCard, colWhite });
+            drawRoundedPanel(440, cY, cW, cH, colCard, colBorder);
+            DrawStringToHandle(454, cY + 16, "2. LỚP THỞ TỰ NHIÊN (IDLE BREATHE)", colAccent, fontBold);
+            DrawStringToHandle(454, cY + 44, "- Tạo nhịp thở phồng / xẹp nhẹ cho nhân vật", colWhite, fontSmall);
+            DrawStringToHandle(454, cY + 64, "- Chế độ Smooth: Biến dạng nhẹ nhàng mượt mà", colWhite, fontSmall);
+            DrawStringToHandle(454, cY + 84, "- Chế độ Pixel: Giữ chất lượng pixel art gốc", colWhite, fontSmall);
+            DrawFormatStringToHandle(454, cY + 114, colCyan, fontSmall, "Chế độ hiện tại: %s", g_breatheMode.c_str());
+            buttons.push_back({ 454, cY + 180, cW - 28, 42, "🌬️ Bật Thở Kiểu Smooth", "breathe_smooth", (g_breatheMode == "smooth") ? colPrimary : colCard, colWhite });
+            buttons.push_back({ 454, cY + 232, cW - 28, 38, "👾 Bật Thở Kiểu Pixel Art", "breathe_pixel", (g_breatheMode == "pixel") ? colPrimary : colCard, colWhite });
 
             // Card 3: Advanced Frame In-between & Re-roll
-            drawRoundedPanel(856, cY, cW, cH, colCard, colCyan);
-            DrawStringToHandle(870, cY + 16, "3. VE LAI HOAC NOI SUY FRAME", colCyan, fontBold);
-            DrawStringToHandle(870, cY + 44, "- Re-roll State: Ve lai rieng 1 dong tac chua ung", colWhite, fontSmall);
-            DrawStringToHandle(870, cY + 64, "- In-between: Tao frame chuyen tiep trung gian", colWhite, fontSmall);
-            DrawStringToHandle(870, cY + 84, "- Giup chuyen dong giua 2 frame muot ma hon", colWhite, fontSmall);
-            buttons.push_back({ 870, cY + 180, cW - 28, 42, "🔄 Re-roll State (" + g_currentState + ")", "act_reroll", colCyan, colWhite });
+            drawRoundedPanel(856, cY, cW, cH, colCard, colBorder);
+            DrawStringToHandle(870, cY + 16, "3. VẼ LẠI HOẶC NỘI SUY FRAME", colAccent, fontBold);
+            DrawStringToHandle(870, cY + 44, "- Re-roll State: Vẽ lại riêng 1 động tác chưa ưng", colWhite, fontSmall);
+            DrawStringToHandle(870, cY + 64, "- In-between: Tạo frame chuyển tiếp trung gian", colWhite, fontSmall);
+            DrawStringToHandle(870, cY + 84, "- Giúp chuyển động giữa 2 frame mượt mà hơn", colWhite, fontSmall);
+            buttons.push_back({ 870, cY + 180, cW - 28, 42, "🔄 Re-roll State (" + g_currentState + ")", "act_reroll", colCard, colWhite });
             buttons.push_back({ 870, cY + 232, cW - 28, 38, "✨ AI In-between Frame (0 -> 1)", "act_inbetween", colCard, colWhite });
 
             // Bottom Full-width summary
             int bBoxY = 480;
-            drawRoundedPanel(24, bBoxY, 1226, 210, GetColor(18, 21, 32), colBorder);
-            DrawStringToHandle(38, bBoxY + 16, "TRANG THAI HIEN TAI CUA TOAN BO ANIMATION STATES:", colPink, fontBold);
+            drawRoundedPanel(24, bBoxY, 1226, 210, GetColor(18, 22, 30), colBorder);
+            DrawStringToHandle(38, bBoxY + 16, "TRẠNG THÁI HIỆN TẠI CỦA TOÀN BỘ ANIMATION STATES:", colAccent, fontBold);
             int sy = bBoxY + 46;
             for (const auto& sname : g_stateOrder) {
                 const auto& sd = g_states[sname];
                 unsigned int stColor = (sd.status == "NORMAL") ? colGreen : colRed;
                 DrawFormatStringToHandle(38, sy, stColor, fontBold,
-                    "* State '%s': %s | FPS: %.1f | So frame: %d | Lech dau: %d frames | Khung <5%%: %d | Nhay >35%%: %d",
+                    "* State '%s': %s | FPS: %.1f | Số frame: %d | Lệch đầu: %d frames | Khựng <5%%: %d | Nhảy vọt >35%%: %d",
                     sname.c_str(), sd.status.c_str(), sd.fps, (int)sd.frames.size(), sd.headDriftCount, sd.stalledCount, sd.jumpCutCount);
                 sy += 26;
             }
-            buttons.push_back({ 38, bBoxY + 150, 240, 38, "▶ Xem Thu Tren San Khau", "goto_stage", colGreen, colWhite });
+            buttons.push_back({ 38, bBoxY + 150, 240, 38, "▶ Xem Thử Trên Sân Khấu", "goto_stage", colGreen, colWhite });
         }
 
         // TAB 3: CODE & ASSET EXPORT HUB
         else if (g_activeTab == 3) {
             drawRoundedPanel(12, 60, 1256, 648, colPanel, colBorder);
-            DrawStringToHandle(24, 74, "TRINH XUAT MA NGUON & TAI NGUYEN (CODE & ASSET EXPORTER HUB)", colPink, fontTitle);
-            DrawStringToHandle(24, 106, "Xuat ma nguon san sang su dung, kem toa do cat frame chinh xac cho tung Game Engine.", colMuted, fontSmall);
+            DrawStringToHandle(24, 74, "TRÌNH XUẤT MÃ NGUỒN & TÀI NGUYÊN (CODE & ASSET EXPORTER HUB)", colAccent, fontTitle);
+            DrawStringToHandle(24, 106, "Xuất mã nguồn sẵn sàng sử dụng, kèm tọa độ cắt frame chính xác cho từng Game Engine.", colMuted, fontSmall);
 
             // 5 Engine Export Cards
             struct EngDef { std::string name, ext, desc, id; unsigned int color; };
             std::vector<EngDef> engs = {
-                { "C++ & DxLib", ".cpp", "File dxlib_sprite_runner.cpp dung DerivationGraph & DrawExtendGraph", "exp_dxlib", colPink },
-                { "HTML5 Canvas", ".html", "Game HTML5 don file nhung san Base64 Sprite Sheet, choi ngay tren trinh duyet", "exp_html5", colGreen },
-                { "Phaser 3", ".js", "ES6 Scene script voi anims.create va physics collider", "exp_phaser", colAmber },
-                { "Godot 4", ".gd", "CharacterBody2D script voi state machine cho Godot Engine", "exp_godot", colCyan },
-                { "Unity C#", ".cs", "SpriteAutoRunner.cs Sprite Sheet Animator cho Unity 2D", "exp_unity", colViolet },
+                { "C++ & DxLib", ".cpp", "File dxlib_sprite_runner.cpp dùng DerivationGraph & DrawExtendGraph", "exp_dxlib", colPrimary },
+                { "HTML5 Canvas", ".html", "Game HTML5 đơn file nhúng sẵn Base64 Sprite Sheet, chạy mượt trên mọi trình duyệt", "exp_html5", colGreen },
+                { "Phaser 3", ".js", "ES6 Scene script với anims.create và Arcade physics collider", "exp_phaser", colAmber },
+                { "Godot 4", ".gd", "CharacterBody2D script với animation state machine", "exp_godot", colCyan },
+                { "Unity C#", ".cs", "SpriteAutoRunner.cs Sprite Sheet Animator cho Unity 2D", "exp_unity", colAccent },
             };
 
             int startCardY = 140;
             for (size_t i = 0; i < engs.size(); ++i) {
                 int eY = startCardY + (int)i * 74;
-                drawRoundedPanel(24, eY, 940, 64, colCard, engs[i].color);
+                drawRoundedPanel(24, eY, 940, 64, colCard, colBorder);
                 DrawFormatStringToHandle(40, eY + 12, engs[i].color, fontBold, "%s (%s)", engs[i].name.c_str(), engs[i].ext.c_str());
                 DrawStringToHandle(40, eY + 36, engs[i].desc.c_str(), colMuted, fontSmall);
-                buttons.push_back({ 780, eY + 14, 170, 36, "Xuat file " + engs[i].ext, engs[i].id, engs[i].color, colWhite });
+                buttons.push_back({ 780, eY + 14, 170, 36, "Xuất file " + engs[i].ext, engs[i].id, colCard, colWhite });
             }
 
             // Right Action Column (290px)
             int rX = 980, rY = 140, rW = 288, rH = 550;
             drawRoundedPanel(rX, rY, rW, rH, colPanel, colBorder);
-            DrawStringToHandle(rX + 16, rY + 16, "THAO TAC XUAT BUNDLE", colPink, fontBold);
+            DrawStringToHandle(rX + 16, rY + 16, "THAO TÁC XUẤT BUNDLE", colAccent, fontBold);
 
-            buttons.push_back({ rX + 16, rY + 46, rW - 32, 44, "🚀 XUAT TAT CA ENGINE (1-Click)", "exp_all", colGreen, colWhite });
-            buttons.push_back({ rX + 16, rY + 100, rW - 32, 44, "📦 Xuat Asset Bundle (PNG+GIF+JSON)", "exp_bundle", colViolet, colWhite });
-            buttons.push_back({ rX + 16, rY + 164, rW - 32, 40, "📂 Mo Thu Muc exported_code/", "open_export_dir", colCard, colWhite });
-            buttons.push_back({ rX + 16, rY + 214, rW - 32, 40, "🌐 Mo Web Studio (127.0.0.1:8780)", "open_web", colCard, colWhite });
-            buttons.push_back({ rX + 16, rY + 264, rW - 32, 40, "💻 Mo Project trong Antigravity IDE", "open_ide", colCard, colWhite });
+            buttons.push_back({ rX + 16, rY + 46, rW - 32, 44, "🚀 XUẤT TẤT CẢ ENGINE (1-Click)", "exp_all", colGreen, colWhite });
+            buttons.push_back({ rX + 16, rY + 100, rW - 32, 44, "📦 Xuất Asset Bundle (PNG+GIF+JSON)", "exp_bundle", colPrimary, colWhite });
+            buttons.push_back({ rX + 16, rY + 164, rW - 32, 40, "📂 Mở Thư Mục exported_code/", "open_export_dir", colCard, colWhite });
+            buttons.push_back({ rX + 16, rY + 214, rW - 32, 40, "🌐 Mở Web Studio (127.0.0.1:8780)", "open_web", colCard, colWhite });
+            buttons.push_back({ rX + 16, rY + 264, rW - 32, 40, "💻 Mở Project trong Antigravity IDE", "open_ide", colCard, colWhite });
 
-            DrawStringToHandle(rX + 16, rY + 330, "File da xuat duoc luu tai:", colWhite, fontSmall);
+            DrawStringToHandle(rX + 16, rY + 330, "File đã xuất được lưu tại:", colWhite, fontSmall);
             DrawStringToHandle(rX + 16, rY + 352, "projects/jirai-neko-demo/", colCyan, fontSmall);
             DrawStringToHandle(rX + 16, rY + 372, "  exported_code/", colCyan, fontSmall);
             DrawStringToHandle(rX + 16, rY + 392, "  - dxlib_sprite_runner.cpp", colMuted, fontSmall);
@@ -715,8 +718,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         for (const auto& b : buttons) {
             bool hov = b.contains(mx, my);
             unsigned int fill = b.bgCol;
-            if (b.active) fill = colPink;
-            else if (hov) fill = GetColor(std::min(255, (int)(fill & 0xFF) + 30), std::min(255, (int)((fill >> 8) & 0xFF) + 30), std::min(255, (int)((fill >> 16) & 0xFF) + 30));
+            if (b.active) fill = colPrimary;
+            else if (hov) fill = GetColor(std::min(255, (int)(fill & 0xFF) + 20), std::min(255, (int)((fill >> 8) & 0xFF) + 20), std::min(255, (int)((fill >> 16) & 0xFF) + 20));
 
             DrawBox(b.x, b.y, b.x + b.w, b.y + b.h, fill, TRUE);
             DrawBox(b.x, b.y, b.x + b.w, b.y + b.h, (hov || b.active) ? colWhite : colBorder, FALSE);
@@ -734,73 +737,73 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                     std::string chosen = openImageFileDialog();
                     if (!chosen.empty()) {
                         runPythonBridgeAsync("import_file --file \"" + chosen + "\"",
-                            "Dang nhap anh: " + chosen + "...",
-                            "Anh da duoc nhap va kiem dinh thanh cong!");
+                            "Đang nạp ảnh: " + chosen + "...",
+                            "Ảnh đã được nạp và kiểm định thành công!");
                     }
                 }
                 // Input switching
                 else if (b.id.rfind("sel_inp_", 0) == 0) {
                     std::string inName = b.id.substr(8);
                     runPythonBridgeAsync("select_input --input \"" + inName + "\"",
-                        "Dang chuyen sang anh: " + inName + "...",
-                        "Da chon anh: " + inName);
+                        "Đang chuyển sang ảnh: " + inName + "...",
+                        "Đã chọn ảnh: " + inName);
                 }
                 // Cutout
                 else if (b.id == "act_cutout") {
-                    runPythonBridgeAsync("cutout", "Dang tach nen trong suot (1-Click Cutout)...", "Tach nen thanh cong! File moi da san sang.");
+                    runPythonBridgeAsync("cutout", "Đang tách nền trong suốt (1-Click Cutout)...", "Tách nền thành công! File mới đã sẵn sàng.");
                 }
                 // Slice Sheet
                 else if (b.id == "act_slice") {
-                    runPythonBridgeAsync("slice_sheet", "Dang cat Sprite Sheet (Auto-Slice 2s)...", "Cat khung hinh thanh cong!");
+                    runPythonBridgeAsync("slice_sheet", "Đang cắt Sprite Sheet (Auto-Slice 2s)...", "Cắt khung hình thành công!");
                 }
                 // Seamless BG
                 else if (b.id == "act_seamless") {
-                    runPythonBridgeAsync("seamless_bg", "Dang tao san cuon vo tan (Seamless Tile)...", "Da tao xong seamless_stage_bg.png!");
+                    runPythonBridgeAsync("seamless_bg", "Đang tạo sàn cuộn vô tận (Seamless Tile)...", "Đã tạo xong seamless_stage_bg.png!");
                 }
                 // AI pipeline
                 else if (b.id == "act_ai_regen") {
-                    runPythonBridgeAsync("ai_regen", "Dang goi Codex CLI tao sprite tu anh mau...", "AI tao bo sprite hoan tat!");
+                    runPythonBridgeAsync("ai_regen", "Đang gọi Codex CLI tạo sprite từ ảnh mẫu...", "AI tạo bộ sprite hoàn tất!");
                 }
                 // Stabilize
                 else if (b.id == "stabilize" || b.id == "act_stabilize_run") {
                     runPythonBridgeAsync("stabilize --run " + g_activeRun + " --breathe-mode " + g_breatheMode,
-                        "Dang chay 1-Click Auto-Stabilize...",
-                        "Da triet tieu rung dau va loc khung khung!");
+                        "Đang chạy 1-Click Auto-Stabilize...",
+                        "Đã triệt tiêu rung đầu và lọc khung khựng!");
                 }
                 // Reset
                 else if (b.id == "reset") {
-                    runPythonBridgeAsync("reset --run " + g_activeRun, "Dang khoi phuc frame goc...", "Da khoi phuc curation.json goc!");
+                    runPythonBridgeAsync("reset --run " + g_activeRun, "Đang khôi phục frame gốc...", "Đã khôi phục curation.json gốc!");
                 }
                 // Breathe toggle
                 else if (b.id == "breathe_smooth") {
                     g_breatheMode = "smooth";
-                    runPythonBridgeAsync("stabilize --run " + g_activeRun + " --breathe-mode smooth", "Dang bat che do tho Smooth...", "Da ap dung che do tho Smooth!");
+                    runPythonBridgeAsync("stabilize --run " + g_activeRun + " --breathe-mode smooth", "Đang bật chế độ thở Smooth...", "Đã áp dụng chế độ thở Smooth!");
                 } else if (b.id == "breathe_pixel") {
                     g_breatheMode = "pixel";
-                    runPythonBridgeAsync("stabilize --run " + g_activeRun + " --breathe-mode pixel", "Dang bat che do tho Pixel Art...", "Da ap dung che do tho Pixel Art!");
+                    runPythonBridgeAsync("stabilize --run " + g_activeRun + " --breathe-mode pixel", "Đang bật chế độ thở Pixel Art...", "Đã áp dụng chế độ thở Pixel Art!");
                 }
                 // Re-roll
                 else if (b.id == "act_reroll") {
                     runPythonBridgeAsync("reroll_state --run " + g_activeRun + " --state " + g_currentState,
-                        "Dang ve lai state " + g_currentState + "...", "Da ve lai state " + g_currentState + "!");
+                        "Đang vẽ lại state " + g_currentState + "...", "Đã vẽ lại state " + g_currentState + "!");
                 }
                 // In-between
                 else if (b.id == "act_inbetween") {
                     runPythonBridgeAsync("inbetween --run " + g_activeRun + " --state " + g_currentState + " --frame 0",
-                        "Dang tao frame noi suy in-between...", "Da tao frame in-between!");
+                        "Đang tạo frame nội suy in-between...", "Đã tạo frame in-between!");
                 }
                 // Switch Run
                 else if (b.id == "switch_run" && g_availableRuns.size() >= 2) {
                     std::string nextRun = (g_activeRun == "codex_run") ? "unpacked_run" : "codex_run";
-                    runPythonBridgeAsync("sync --run " + nextRun, "Dang doi sang " + nextRun + "...", "Da doi sang " + nextRun);
+                    runPythonBridgeAsync("sync --run " + nextRun, "Đang đổi sang " + nextRun + "...", "Đã đổi sang " + nextRun);
                 }
                 // FPS adjustments
                 else if (b.id == "fps_dec") {
                     float newFps = std::max(1.0f, g_states[g_currentState].fps - 1.0f);
-                    runPythonBridgeAsync("set_fps --run " + g_activeRun + " --state " + g_currentState + " --fps " + std::to_string(newFps), "Dang giam FPS...", "Da cap nhat FPS");
+                    runPythonBridgeAsync("set_fps --run " + g_activeRun + " --state " + g_currentState + " --fps " + std::to_string(newFps), "Đang giảm FPS...", "Đã cập nhật FPS");
                 } else if (b.id == "fps_inc") {
                     float newFps = std::min(60.0f, g_states[g_currentState].fps + 1.0f);
-                    runPythonBridgeAsync("set_fps --run " + g_activeRun + " --state " + g_currentState + " --fps " + std::to_string(newFps), "Dang tang FPS...", "Da cap nhat FPS");
+                    runPythonBridgeAsync("set_fps --run " + g_activeRun + " --state " + g_currentState + " --fps " + std::to_string(newFps), "Đang tăng FPS...", "Đã cập nhật FPS");
                 }
                 // Stage toggles
                 else if (b.id == "toggle_forward") forwardLoop = !forwardLoop;
@@ -821,18 +824,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                     if (op == "dx_neg") oss << " --dx -1";
                     else if (op == "dx_pos") oss << " --dx 1";
                     else if (op == "tog") oss << " --toggle";
-                    runPythonBridgeAsync(oss.str(), "Dang cap nhat frame #" + std::to_string(fIdx) + "...", "Da cap nhat frame!");
+                    runPythonBridgeAsync(oss.str(), "Đang cập nhật frame #" + std::to_string(fIdx) + "...", "Đã cập nhật frame!");
                 }
                 // Exports
                 else if (b.id == "export_code" || b.id == "exp_all") {
-                    runPythonBridgeAsync("export --run " + g_activeRun + " --engine all", "Dang xuat tat ca engine code...", "Da xuat xong C++, HTML5, Phaser, Godot, Unity vao exported_code/!");
+                    runPythonBridgeAsync("export --run " + g_activeRun + " --engine all", "Đang xuất tất cả engine code...", "Đã xuất xong C++, HTML5, Phaser, Godot, Unity vào exported_code/!");
                     ShellExecuteA(NULL, "open", "projects\\jirai-neko-demo\\exported_code", NULL, NULL, SW_SHOWNORMAL);
                 } else if (b.id == "exp_bundle") {
-                    runPythonBridgeAsync("export --run " + g_activeRun + " --engine bundle", "Dang xuat Asset Bundle...", "Da xuat Asset Bundle vao exported_code/asset_bundle/!");
+                    runPythonBridgeAsync("export --run " + g_activeRun + " --engine bundle", "Đang xuất Asset Bundle...", "Đã xuất Asset Bundle vào exported_code\\asset_bundle/!");
                     ShellExecuteA(NULL, "open", "projects\\jirai-neko-demo\\exported_code\\asset_bundle", NULL, NULL, SW_SHOWNORMAL);
                 } else if (b.id.rfind("exp_", 0) == 0) {
                     std::string engName = b.id.substr(4);
-                    runPythonBridgeAsync("export --run " + g_activeRun + " --engine " + engName, "Dang xuat file " + engName + "...", "Da xuat file " + engName + "!");
+                    runPythonBridgeAsync("export --run " + g_activeRun + " --engine " + engName, "Đang xuất file " + engName + "...", "Đã xuất file " + engName + "!");
                 } else if (b.id == "open_export_dir") {
                     ShellExecuteA(NULL, "open", "projects\\jirai-neko-demo\\exported_code", NULL, NULL, SW_SHOWNORMAL);
                 } else if (b.id == "open_web") {

@@ -1,9 +1,9 @@
 PROJECT jirai-neko-demo codex_run codex_run,slice_input_sheet,unpacked_run
-INPUTS input_sheet.png base_chibi.png,character_ref.jpg,input_sheet.png
-INPUT_PATH C:\Katsuragi_Shin\Aika 2D Sprite Tool\projects\jirai-neko-demo\inputs\input_sheet.png
-DETECT 1 sprite_sheet 1024 341 1 1 1 #00FF00 NONE
-DETECT_MSG Ready for pipeline
-ATLAS C:\Katsuragi_Shin\Aika 2D Sprite Tool\projects\jirai-neko-demo\runs\codex_run\sprite-sheet-alpha.png
+INPUTS chibi_jirai_sprite_sheet_14frames.png base_chibi.png,character_ref.jpg,chibi_jirai_sprite_sheet_14frames.png,input_sheet.png
+INPUT_PATH C:\Katsuragi_Shin\Aika The Black Magic\Aika-2D-Sprite-Tool\projects\jirai-neko-demo\inputs\chibi_jirai_sprite_sheet_14frames.png
+DETECT 1 sprite_sheet 1536 512 2 8 1 #00FF00 NONE
+DETECT_MSG Phát hiện Sprite Sheet (2 hàng, ~14 frames, ô ~192x256 px).
+ATLAS C:\Katsuragi_Shin\Aika The Black Magic\Aika-2D-Sprite-Tool\projects\jirai-neko-demo\runs\codex_run\sprite-sheet-alpha.png
 STATE idle 5.00 1 NORMAL 0 0 0 138 205
 FRAME idle 0 0 0 256 256 1 0 0 189.00 0.00 0.00 6.72 OK NORMAL
 FRAME idle 1 256 0 256 256 1 0 0 188.00 -1.00 0.72 3.29 OK NORMAL
